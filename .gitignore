@@ -1,0 +1,10 @@
+# Byte-compiled / optimized / DLL files
+__pycache__/
+
+coreruleset-4.1.0/
+modsec-learn-dataset/
+ModSecurity/
+pymodsecurity/
+coreruleset/
+.venv/
+.venv_wsl/
