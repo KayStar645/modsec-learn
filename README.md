@@ -187,3 +187,62 @@ modsec-learn/
 
 Nếu bạn gặp lỗi hoặc muốn đóng góp, vui lòng mở issue/PR trực tiếp trên kho
 Git. Mọi phản hồi đều được hoan nghênh!
+
+## 12. Demo web trực quan
+
+Dự án kèm theo một ứng dụng web nhỏ trong thư mục `demo_app/` để giả lập các payload
+SQLi và quan sát phản ứng của ModSecurity CRS lẫn mô hình học máy.
+
+### 12.1. Chuẩn bị
+
+- Hoàn tất các bước cài đặt ModSecurity, `pymodsecurity` và huấn luyện mô hình (mục 7–8).
+- Đảm bảo đã cài thêm dependencies web: `pip install -r requirements.txt` (gồm Flask).
+- Nếu môi trường chưa cài được `pymodsecurity`, ứng dụng sẽ tự động chuyển sang chế độ **stub**
+  (mô phỏng luật cơ bản) để vẫn có thể trình diễn luồng xử lý.
+
+### 12.2. Khởi chạy
+
+```bash
+python -m demo_app.app
+```
+
+Ứng dụng mặc định chạy tại `http://127.0.0.1:5000`. Màn hình chính cung cấp:
+
+- Form nhập payload tùy ý, lựa chọn Paranoia Level và mô hình ML.
+- Các nút payload mẫu (legit/SQLi/Blind SQLi) để trình diễn nhanh.
+- Bảng kết quả hiển thị quyết định của ModSecurity, dự đoán mô hình và các rule CRS bị kích hoạt.
+
+> Lưu ý: khi chạy lần đầu, ứng dụng sẽ nạp toàn bộ mô hình `.joblib` tương ứng từng PL.
+> Nếu chưa huấn luyện đủ mô hình, ứng dụng sẽ tự động bỏ qua mô hình không tồn tại.
+> Giao diện sẽ hiển thị thêm trạng thái `backend` = `stub` nếu đang dùng chế độ mô phỏng.
+
+### 12.3. Tính năng nâng cao
+
+- **Giao diện đa tab:**  
+  - *Trình diễn tức thời*: thử payload thủ công và xem bảng kết quả mới nhất.  
+  - *Batch & Lịch sử*: chọn dataset, chạy batch, xem thống kê tóm tắt và tải log JSON.  
+  - *Báo cáo mô hình*: biểu đồ so sánh hiệu năng giữa các mô hình ML dựa trên log hiện có.
+- **Datasets demo:**  
+  - `demo_app/data/sample_attacks.json`: bộ ngắn (~20 payload) cho demo nhanh.  
+  - `demo_app/data/advanced_attacks.json`: 100 payload SQLi đa dạng (union, boolean, time-based, error, obfuscated) để trình diễn quy mô lớn.  
+    Bạn có thể mở rộng/tuỳ biến cả hai file để phù hợp kịch bản trình diễn.
+- **Lựa chọn batch linh hoạt:**  
+  - Chọn dataset, số mẫu (để trống hoặc nhập 0 = chạy toàn bộ).  
+  - Tick chọn một hay nhiều mô hình ML muốn so sánh cho Paranoia Level tương ứng.  
+  - Kết quả mỗi payload sẽ ghi nhận đầy đủ từng mô hình đã chạy (hiển thị trong bảng, modal chi tiết, log và báo cáo biểu đồ).
+- **Lịch sử log phân trang:**  
+  - Ô `limit` dùng để chọn số dòng mỗi trang, hỗ trợ chuyển trang trước/sau và cập nhật biểu đồ theo dữ liệu trang hiện tại.
+- **Batch attack simulator:** chọn dataset + số lượng payload và nhấn “Chạy batch”. Kết quả
+  sẽ được lưu vào log, đồng thời tạo thống kê tổng quan (ModSecurity chặn, ML đánh dấu, tỉ lệ đồng thuận).
+- **Timeline trực quan:** mỗi bản ghi (thời gian thực hoặc log) có sơ đồ xử lý từng bước
+  (nhận payload → ModSecurity → ML → kết luận) hiển thị dưới dạng modal.
+- **Báo cáo biểu đồ:** tab “Báo cáo mô hình” sử dụng Chart.js để hiển thị:
+  - Tỉ lệ mỗi mô hình đánh dấu payload độc hại.
+  - Số lượt dự đoán & mức độ đồng thuận với ModSecurity.
+- **Hệ thống log JSON Lines:** mọi phân tích được ghi vào `demo_app/logs/analysis.log`.
+  Có thể điều chỉnh số dòng đọc (mặc định 50) và tái tải log ngay trong giao diện.
+- **API bổ sung:**
+  - `POST /api/run_batch`: chạy batch theo dataset (tham số `dataset`, `limit`, `paranoia_level`, `model_key`).  
+  - `GET /api/logs`: đọc log dưới dạng JSON (tham số `limit`).  
+  - `GET /api/stats`: trả về thống kê hiệu năng mô hình dựa trên log.  
+  - `GET /api/config`: cung cấp thông tin backend, đường dẫn log, danh sách dataset, mô hình sẵn có.

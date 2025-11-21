@@ -1,0 +1,123 @@
+[
+  {
+    "name": "Login hợp lệ",
+    "category": "legitimate",
+    "payload": "username=alice&password=SuperSecure123",
+    "description": "Truy vấn đăng nhập bình thường."
+  },
+  {
+    "name": "Tìm sản phẩm hợp lệ",
+    "category": "legitimate",
+    "payload": "q=best+wireless+headphones&sort=price",
+    "description": "Tìm kiếm sản phẩm hợp lệ."
+  },
+  {
+    "name": "SQLi cổ điển",
+    "category": "sqli_union",
+    "payload": "id=1 UNION SELECT username, password FROM users --",
+    "description": "Tấn công UNION SELECT để trích xuất thông tin."
+  },
+  {
+    "name": "SQLi blind AND sleep",
+    "category": "sqli_blind",
+    "payload": "id=5' AND SLEEP(5)--",
+    "description": "Blind SQLi sử dụng hàm SLEEP để suy luận dữ liệu."
+  },
+  {
+    "name": "SQLi tautology",
+    "category": "sqli_tautology",
+    "payload": "username=admin' OR '1'='1&password=anything",
+    "description": "Tấn công tautology trong tham số đăng nhập."
+  },
+  {
+    "name": "SQLi stacked queries",
+    "category": "sqli_stacked",
+    "payload": "id=1; DROP TABLE orders; --",
+    "description": "Stacked query cố gắng xóa bảng."
+  },
+  {
+    "name": "SQLi comment obfuscation",
+    "category": "sqli_obfuscated",
+    "payload": "id=1/**/UNION/**/SELECT/**/user,pass/**/FROM/**/users",
+    "description": "Sử dụng comment để né rule đơn giản."
+  },
+  {
+    "name": "SQLi hex encoded",
+    "category": "sqli_obfuscated",
+    "payload": "id=1 UNION SELECT 0x61646d696e,0x70617373776f7264",
+    "description": "Trích xuất dữ liệu dạng hex."
+  },
+  {
+    "name": "Time-based payload",
+    "category": "sqli_time",
+    "payload": "product_id=2 OR IF(1=1, SLEEP(3), 0)",
+    "description": "Time-based SQLi sử dụng IF."
+  },
+  {
+    "name": "Error-based payload",
+    "category": "sqli_error",
+    "payload": "id=1 AND (SELECT 1 FROM (SELECT COUNT(*), CONCAT((SELECT database()), 0x3a, FLOOR(RAND(0)*2)) x FROM information_schema.tables GROUP BY x) y)",
+    "description": "Error-based SQLi sử dụng RAND."
+  },
+  {
+    "name": "Stored Procedure Injection",
+    "category": "sqli_stored_proc",
+    "payload": "id=1; EXEC xp_cmdshell('dir'); --",
+    "description": "Tấn công gọi stored procedure nguy hiểm."
+  },
+  {
+    "name": "Login brute-force mẫu",
+    "category": "legitimate",
+    "payload": "username=tester&password=Test1234!",
+    "description": "Payload hợp lệ để so sánh."
+  },
+  {
+    "name": "Boolean-based payload",
+    "category": "sqli_boolean",
+    "payload": "id=4' AND 'x'='x",
+    "description": "Boolean-based SQLi đơn giản."
+  },
+  {
+    "name": "Inline comment payload",
+    "category": "sqli_obfuscated",
+    "payload": "category=1' /*!50000UNION*/ SELECT null,null-- -",
+    "description": "Sử dụng comment có điều kiện."
+  },
+  {
+    "name": "Union select payload 2",
+    "category": "sqli_union",
+    "payload": "item=1 UNION ALL SELECT credit_card_number, expiry FROM payments",
+    "description": "Union all để lấy dữ liệu thẻ."
+  },
+  {
+    "name": "Second-order injection",
+    "category": "sqli_second_order",
+    "payload": "feedback=Great product! <script>--</script>",
+    "description": "Payload hợp lệ (không SQLi) để kiểm thử."
+  },
+  {
+    "name": "Order by injection",
+    "category": "sqli_order",
+    "payload": "sort=price; DROP TABLE users; --",
+    "description": "Injected command trong tham số sort."
+  },
+  {
+    "name": "Stacked select injection",
+    "category": "sqli_stacked",
+    "payload": "ref=abc'; SELECT * FROM admins; --",
+    "description": "Truy vấn stacked thứ hai."
+  },
+  {
+    "name": "Blind payload 2",
+    "category": "sqli_blind",
+    "payload": "uid=12' AND IF(SUBSTRING((SELECT user()),1,1)='r', SLEEP(4), 0)--",
+    "description": "Blind SQLi dùng IF + substring."
+  },
+  {
+    "name": "Boolean-based payload 2",
+    "category": "sqli_boolean",
+    "payload": "user=1 OR 'a'='a",
+    "description": "Boolean SQLi khác."
+  }
+]
+

@@ -184,6 +184,17 @@ class PyModSecurity():
                 Danh sách mã luật dạng chuỗi.
         """
         return self._rules_logger_cb.get_triggered_rules()
+
+    def _get_triggered_rules_details(self):
+        """
+        Lấy danh sách chi tiết các luật đã bị kích hoạt.
+
+        Returns
+        -------
+            list
+                Danh sách dict chứa thông tin chi tiết từng luật.
+        """
+        return self._rules_logger_cb.get_triggered_rules_details()
     
 
 class RulesLogger:
@@ -193,6 +204,16 @@ class RulesLogger:
             4: 3,   # CẢNH BÁO (WARNING)
             5: 2    # THÔNG BÁO (NOTICE)
         }
+    _SEVERITY_LABEL = {
+        0: "EMERGENCY",
+        1: "ALERT",
+        2: "CRITICAL",
+        3: "ERROR",
+        4: "WARNING",
+        5: "NOTICE",
+        6: "INFO",
+        7: "DEBUG",
+    }
     
     def _severity2score(self, severity):
         """
@@ -208,7 +229,7 @@ class RulesLogger:
             score: float
                 Điểm tương ứng mức độ nghiêm trọng.
         """
-        return self._SEVERITY_SCORE[severity]
+        return self._SEVERITY_SCORE.get(severity, 1)
     
 
     def __init__(self, threshold=5.0, regex_rules_filter=None, debug=False):
@@ -231,6 +252,7 @@ class RulesLogger:
         self._score           = 0.0
         self._threshold       = threshold
         self._status          = 200
+        self._rules_details   = {}
 
 
     def __call__(self, data, rule_message):
@@ -253,9 +275,22 @@ class RulesLogger:
                 rule_message.m_severity
             ))
  
-        elif re.match(self._rules_filter, str(rule_message.m_ruleId)) and \
-                (str(rule_message.m_ruleId) not in self._rules_triggered):
-            self._rules_triggered.append(str(rule_message.m_ruleId))
+        rule_id = str(rule_message.m_ruleId)
+        if re.match(self._rules_filter, rule_id):
+            if rule_id not in self._rules_triggered:
+                self._rules_triggered.append(rule_id)
+            if rule_id not in self._rules_details:
+                self._rules_details[rule_id] = {
+                    "id": rule_id,
+                    "message": getattr(rule_message, "m_message", "") or "",
+                    "data": getattr(rule_message, "m_data", "") or "",
+                    "phase": getattr(rule_message, "m_phase", None),
+                    "severity": getattr(rule_message, "m_severity", None),
+                    "severity_label": self._SEVERITY_LABEL.get(
+                        getattr(rule_message, "m_severity", None),
+                        "UNKNOWN",
+                    ),
+                }
 
         # Cộng dồn điểm cảnh báo dựa trên mức độ nghiêm trọng
         self._score += self._severity2score(rule_message.m_severity)
@@ -274,6 +309,21 @@ class RulesLogger:
                 Danh sách mã luật bị kích hoạt.
         """
         return self._rules_triggered
+
+    def get_triggered_rules_details(self):
+        """
+        Trả về danh sách chi tiết các luật đã ghi nhận.
+
+        Returns
+        -------
+            list
+                Danh sách dict chứa id, message, severity, phase...
+        """
+        return [
+            self._rules_details[rule_id]
+            for rule_id in self._rules_triggered
+            if rule_id in self._rules_details
+        ]
 
 
     def get_score(self):

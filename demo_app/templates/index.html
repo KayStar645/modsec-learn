@@ -1,0 +1,243 @@
+<!DOCTYPE html>
+<html lang="vi">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>ModSec Learn Demo</title>
+    <link
+      href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}" />
+  </head>
+  <body>
+    <nav class="navbar navbar-expand-lg navbar-dark bg-dark">
+      <div class="container-fluid">
+        <span class="navbar-brand">ModSecurity + Machine Learning Demo</span>
+      </div>
+    </nav>
+
+    <main class="container py-4">
+      <section class="mb-4">
+        <h1 class="h3 mb-3">Giả lập cuộc tấn công SQLi</h1>
+        <p class="text-muted">
+          Sử dụng các tab bên dưới để thử payload thủ công, chạy batch hàng loạt và theo dõi báo cáo tổng hợp.
+        </p>
+      </section>
+
+      <ul class="nav nav-tabs" id="mainTab" role="tablist">
+        <li class="nav-item" role="presentation">
+          <button class="nav-link active" id="live-tab" data-bs-toggle="tab" data-bs-target="#tab-live" type="button" role="tab">
+            Trình diễn tức thời
+          </button>
+        </li>
+        <li class="nav-item" role="presentation">
+          <button class="nav-link" id="history-tab" data-bs-toggle="tab" data-bs-target="#tab-history" type="button" role="tab">
+            Batch &amp; Lịch sử
+          </button>
+        </li>
+        <li class="nav-item" role="presentation">
+          <button class="nav-link" id="report-tab" data-bs-toggle="tab" data-bs-target="#tab-report" type="button" role="tab">
+            Báo cáo mô hình
+          </button>
+        </li>
+      </ul>
+
+      <div class="tab-content pt-3">
+        <div class="tab-pane fade show active" id="tab-live" role="tabpanel" aria-labelledby="live-tab">
+          <section class="card shadow-sm mb-4">
+            <div class="card-body">
+              <form id="payload-form">
+                <div class="mb-3">
+                  <label for="payload" class="form-label"
+                    >Payload (ví dụ: <code>' OR 1=1 --</code>)</label
+                  >
+                  <textarea
+                    id="payload"
+                    class="form-control"
+                    rows="3"
+                    required
+                    placeholder="Nhập payload..."
+                  ></textarea>
+                </div>
+
+                <div class="row g-3">
+                  <div class="col-md-6">
+                    <label for="pl-select" class="form-label">Paranoia Level</label>
+                    <select id="pl-select" class="form-select"></select>
+                  </div>
+                  <div class="col-md-6">
+                    <label for="model-select" class="form-label">Mô hình học máy</label>
+                    <select id="model-select" class="form-select">
+                      <option value="">Tự động chọn</option>
+                    </select>
+                  </div>
+                </div>
+
+                <div class="d-flex flex-wrap gap-2 mt-3">
+                  <button type="submit" class="btn btn-primary">
+                    Phân tích payload
+                  </button>
+                  <button type="button" class="btn btn-outline-secondary" data-demo="legit">
+                    Payload hợp lệ
+                  </button>
+                  <button type="button" class="btn btn-outline-danger" data-demo="sqli">
+                    Payload SQLi mẫu
+                  </button>
+                  <button type="button" class="btn btn-outline-warning" data-demo="blind">
+                    Blind SQLi
+                  </button>
+                </div>
+              </form>
+            </div>
+          </section>
+
+          <section class="card shadow-sm">
+            <div class="card-body">
+              <h2 class="h4 mb-3">Kết quả gần nhất</h2>
+              <div id="alert-area"></div>
+
+              <div class="table-responsive">
+                <table class="table table-striped align-middle" id="results-table">
+                  <thead>
+                    <tr>
+                      <th>Thời gian</th>
+                      <th>Payload</th>
+                      <th>PL</th>
+                      <th>ModSecurity</th>
+                      <th>Mô hình ML</th>
+                      <th>Rules</th>
+                      <th>Chi tiết</th>
+                    </tr>
+                  </thead>
+                  <tbody></tbody>
+                </table>
+              </div>
+            </div>
+          </section>
+        </div>
+
+        <div class="tab-pane fade" id="tab-history" role="tabpanel" aria-labelledby="history-tab">
+          <section class="card shadow-sm mb-4">
+            <div class="card-body">
+              <div class="row g-3 align-items-end">
+                <div class="col-md-4">
+                  <label for="dataset-select" class="form-label">Nguồn payload batch</label>
+                  <select id="dataset-select" class="form-select"></select>
+                  <div class="form-text" id="dataset-meta"></div>
+                </div>
+                <div class="col-md-3">
+                  <label for="batch-size" class="form-label">Số payload</label>
+                  <input type="number" id="batch-size" class="form-control" value="20" min="1" max="500" />
+                </div>
+                <div class="col-md-3">
+                  <label for="batch-pl-select" class="form-label">Paranoia Level</label>
+                  <select id="batch-pl-select" class="form-select"></select>
+                </div>
+                <div class="col-md-2 d-grid">
+                  <button type="button" id="batch-run-btn" class="btn btn-outline-primary">
+                    Chạy batch
+                  </button>
+                </div>
+                <div class="col-12">
+                  <label class="form-label">Chọn mô hình học máy</label>
+                  <div id="batch-model-checkboxes" class="model-checkboxes"></div>
+                </div>
+              </div>
+            </div>
+          </section>
+
+          <section class="card shadow-sm mb-4">
+            <div class="card-body">
+              <h2 class="h5 mb-3">Tóm tắt batch gần nhất</h2>
+              <div id="batch-summary" class="alert alert-info d-none"></div>
+            </div>
+          </section>
+
+          <section class="card shadow-sm mb-4">
+            <div class="card-body">
+              <div class="d-flex justify-content-between align-items-center mb-3 flex-wrap gap-2">
+                <h2 class="h5 mb-0">Lịch sử (log)</h2>
+                <div class="d-flex align-items-center gap-2">
+                  <input type="number" id="log-limit" class="form-control form-control-sm" style="width: 110px" value="50" min="10" max="500" />
+                  <button class="btn btn-sm btn-outline-secondary" id="reload-logs-btn">Tải lại log</button>
+                </div>
+              </div>
+              <div class="table-responsive">
+                <table class="table table-hover align-middle" id="logs-table">
+                  <thead>
+                    <tr>
+                      <th>Thời gian</th>
+                      <th>Payload</th>
+                      <th>PL</th>
+                      <th>ModSecurity</th>
+                      <th>Rules</th>
+                      <th>ML</th>
+                      <th>Nguồn</th>
+                      <th>Chi tiết</th>
+                    </tr>
+                  </thead>
+                  <tbody></tbody>
+                </table>
+              </div>
+              <div class="d-flex justify-content-between align-items-center mt-2">
+                <div class="btn-group btn-group-sm" role="group">
+                  <button class="btn btn-outline-secondary" id="log-prev-btn">Trang trước</button>
+                  <span class="mx-2 text-muted small" id="log-page-info">Trang 1/1</span>
+                  <button class="btn btn-outline-secondary" id="log-next-btn">Trang sau</button>
+                </div>
+              </div>
+              <div class="text-muted small mt-2" id="log-meta"></div>
+            </div>
+          </section>
+        </div>
+
+        <div class="tab-pane fade" id="tab-report" role="tabpanel" aria-labelledby="report-tab">
+          <section class="card shadow-sm">
+            <div class="card-body">
+              <div class="d-flex justify-content-between align-items-center mb-3 flex-wrap gap-2">
+                <div>
+                  <h2 class="h5 mb-1">Báo cáo hiệu năng mô hình</h2>
+                  <p class="text-muted mb-0">Dựa trên log gần nhất (có thể tải thêm để cập nhật thống kê).</p>
+                </div>
+                <button class="btn btn-sm btn-outline-primary" id="refresh-stats-btn">Làm mới biểu đồ</button>
+              </div>
+              <div class="row g-4">
+                <div class="col-lg-6">
+                  <canvas id="chart-attack-rate" height="220"></canvas>
+                </div>
+                <div class="col-lg-6">
+                  <canvas id="chart-agreement" height="220"></canvas>
+                </div>
+              </div>
+              <div class="text-muted small mt-3" id="stats-meta"></div>
+            </div>
+          </section>
+        </div>
+      </div>
+    </main>
+
+    <div class="modal fade" id="detailModal" tabindex="-1" aria-labelledby="detailModalLabel" aria-hidden="true">
+      <div class="modal-dialog modal-lg modal-dialog-scrollable">
+        <div class="modal-content">
+          <div class="modal-header">
+            <h5 class="modal-title" id="detailModalLabel">Sơ đồ xử lý</h5>
+            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+          </div>
+          <div class="modal-body">
+            <div id="detail-metadata" class="mb-3"></div>
+            <div id="detail-timeline" class="timeline"></div>
+            <div id="detail-rules" class="mt-3"></div>
+            <div id="detail-models" class="mt-3"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/dayjs@1/dayjs.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+    <script src="{{ url_for('static', filename='app.js') }}"></script>
+  </body>
+</html>
+
