@@ -41,6 +41,11 @@
             Báo cáo mô hình
           </button>
         </li>
+        <li class="nav-item" role="presentation">
+          <button class="nav-link" id="rules-tab" data-bs-toggle="tab" data-bs-target="#tab-rules" type="button" role="tab">
+            Tra cứu Rules &amp; PL
+          </button>
+        </li>
       </ul>
 
       <div class="tab-content pt-3">
@@ -149,8 +154,56 @@
 
           <section class="card shadow-sm mb-4">
             <div class="card-body">
-              <h2 class="h5 mb-3">Tóm tắt batch gần nhất</h2>
+              <div class="d-flex justify-content-between align-items-center mb-3">
+                <h2 class="h5 mb-0">Tóm tắt batch gần nhất</h2>
+                <button class="btn btn-sm btn-outline-secondary" type="button" id="toggle-explanation-btn" style="display: none;">
+                  <span id="explanation-toggle-text">Hiển thị giải thích</span>
+                </button>
+              </div>
               <div id="batch-summary" class="alert alert-info d-none"></div>
+              <div id="batch-explanation" class="mt-3 d-none">
+                <div class="card border-primary">
+                  <div class="card-header bg-primary text-white">
+                    <h6 class="mb-0">📊 Giải thích chi tiết các số liệu</h6>
+                  </div>
+                  <div class="card-body">
+                    <div class="row g-3">
+                      <div class="col-md-6">
+                        <div class="border rounded p-3 h-100">
+                          <h6 class="text-primary mb-2">1. Tổng payload</h6>
+                          <p class="small mb-2"><strong>Định nghĩa:</strong> Tổng số payload đã được phân tích trong batch này.</p>
+                          <p class="small mb-0"><strong>Ví dụ:</strong> Nếu bạn chọn dataset với 20 payload, thì tổng payload = 20.</p>
+                        </div>
+                      </div>
+                      <div class="col-md-6">
+                        <div class="border rounded p-3 h-100">
+                          <h6 class="text-danger mb-2">2. ModSecurity chặn</h6>
+                          <p class="small mb-2"><strong>Định nghĩa:</strong> Số payload mà ModSecurity quyết định chặn (decision = "block").</p>
+                          <p class="small mb-0"><strong>Điều kiện:</strong> Score >= 5.0 (threshold). ModSecurity tính điểm dựa trên rules kích hoạt.</p>
+                        </div>
+                      </div>
+                      <div class="col-md-6">
+                        <div class="border rounded p-3 h-100">
+                          <h6 class="text-warning mb-2">3. ML đánh dấu attack</h6>
+                          <p class="small mb-2"><strong>Định nghĩa:</strong> Số payload mà mô hình ML dự đoán là tấn công (prediction = 1).</p>
+                          <p class="small mb-0"><strong>Cách hoạt động:</strong> ML phân tích feature vector từ rules kích hoạt và đưa ra dự đoán.</p>
+                        </div>
+                      </div>
+                      <div class="col-md-6">
+                        <div class="border rounded p-3 h-100">
+                          <h6 class="text-success mb-2">4. Cùng chặn</h6>
+                          <p class="small mb-2"><strong>Định nghĩa:</strong> Số payload mà CẢ ModSecurity VÀ ML đều chặn/đánh dấu là tấn công.</p>
+                          <p class="small mb-0"><strong>Ý nghĩa:</strong> Độ tin cậy cao vì cả hai hệ thống đồng ý.</p>
+                        </div>
+                      </div>
+                    </div>
+                    <div class="alert alert-light mt-3 mb-0">
+                      <h6 class="mb-2">📈 Phân tích kết quả:</h6>
+                      <div id="batch-analysis" class="small"></div>
+                    </div>
+                  </div>
+                </div>
+              </div>
             </div>
           </section>
 
@@ -211,6 +264,103 @@
                 </div>
               </div>
               <div class="text-muted small mt-3" id="stats-meta"></div>
+            </div>
+          </section>
+        </div>
+
+        <div class="tab-pane fade" id="tab-rules" role="tabpanel" aria-labelledby="rules-tab">
+          <section class="card shadow-sm mb-4">
+            <div class="card-body">
+              <h2 class="h4 mb-3">Paranoia Level (PL) - Mức độ nhạy cảm</h2>
+              <div class="row g-3">
+                <div class="col-md-6 col-lg-3">
+                  <div class="card border-primary h-100">
+                    <div class="card-body">
+                      <h5 class="card-title text-primary">PL 1</h5>
+                      <p class="card-text small mb-2"><strong>Mức mặc định</strong></p>
+                      <ul class="small mb-0 ps-3">
+                        <li>Ít nhạy nhất</li>
+                        <li>Ít false positive</li>
+                        <li>Phù hợp production</li>
+                        <li>Chỉ kích hoạt rules cơ bản</li>
+                      </ul>
+                    </div>
+                  </div>
+                </div>
+                <div class="col-md-6 col-lg-3">
+                  <div class="card border-warning h-100">
+                    <div class="card-body">
+                      <h5 class="card-title text-warning">PL 2</h5>
+                      <p class="card-text small mb-2"><strong>Tăng độ nhạy</strong></p>
+                      <ul class="small mb-0 ps-3">
+                        <li>Bắt thêm một số tấn công</li>
+                        <li>Có một số false positive</li>
+                        <li>Phù hợp moderate security</li>
+                        <li>Kích hoạt thêm rules</li>
+                      </ul>
+                    </div>
+                  </div>
+                </div>
+                <div class="col-md-6 col-lg-3">
+                  <div class="card border-danger h-100">
+                    <div class="card-body">
+                      <h5 class="card-title text-danger">PL 3</h5>
+                      <p class="card-text small mb-2"><strong>Rất nhạy</strong></p>
+                      <ul class="small mb-0 ps-3">
+                        <li>Bắt nhiều tấn công hơn</li>
+                        <li>Nhiều false positive</li>
+                        <li>Cần tuning kỹ</li>
+                        <li>Kích hoạt nhiều rules</li>
+                      </ul>
+                    </div>
+                  </div>
+                </div>
+                <div class="col-md-6 col-lg-3">
+                  <div class="card border-dark h-100">
+                    <div class="card-body">
+                      <h5 class="card-title text-dark">PL 4</h5>
+                      <p class="card-text small mb-2"><strong>Cực kỳ nhạy</strong></p>
+                      <ul class="small mb-0 ps-3">
+                        <li>Bắt hầu hết tấn công</li>
+                        <li>Rất nhiều false positive</li>
+                        <li>Chỉ dùng khi cần thiết</li>
+                        <li>Kích hoạt tất cả rules</li>
+                      </ul>
+                    </div>
+                  </div>
+                </div>
+              </div>
+              <div class="alert alert-info mt-3 mb-0">
+                <strong>Lưu ý:</strong> PL cao hơn = Nhiều rules kích hoạt hơn = Nhiều điểm hơn = Phát hiện nhiều tấn công hơn (nhưng cũng có nhiều false positive hơn).
+              </div>
+            </div>
+          </section>
+
+          <section class="card shadow-sm">
+            <div class="card-body">
+              <div class="d-flex justify-content-between align-items-center mb-3 flex-wrap gap-2">
+                <h2 class="h4 mb-0">Tra cứu Rules</h2>
+                <div class="d-flex gap-2 flex-wrap">
+                  <input
+                    type="text"
+                    id="rule-search"
+                    class="form-control"
+                    style="width: 250px"
+                    placeholder="Tìm kiếm rule ID hoặc mô tả..."
+                  />
+                  <select id="rule-pl-filter" class="form-select" style="width: 150px">
+                    <option value="">Tất cả PL</option>
+                    <option value="1">PL 1</option>
+                    <option value="2">PL 2</option>
+                    <option value="3">PL 3</option>
+                    <option value="4">PL 4</option>
+                  </select>
+                </div>
+              </div>
+              <div id="rules-list" class="row g-3"></div>
+              <div id="rules-empty" class="text-center text-muted py-4 d-none">
+                Không tìm thấy rule nào phù hợp.
+              </div>
             </div>
           </section>
         </div>

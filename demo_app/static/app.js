@@ -5,6 +5,7 @@ const state = {
   resultIndex: new Map(),
   logIndex: new Map(),
   batchSummary: null,
+  batchResults: [], // Lưu kết quả batch để phân tích
   detailModal: null,
   charts: {
     attackRate: null,
@@ -203,6 +204,17 @@ function bindEvents() {
   document.getElementById("log-prev-btn")?.addEventListener("click", () => changeLogPage(-1));
   document.getElementById("log-next-btn")?.addEventListener("click", () => changeLogPage(1));
   document.getElementById("refresh-stats-btn")?.addEventListener("click", () => fetchStats());
+  
+  // Toggle batch explanation
+  document.getElementById("toggle-explanation-btn")?.addEventListener("click", () => {
+    const explanationDiv = document.getElementById("batch-explanation");
+    const toggleText = document.getElementById("explanation-toggle-text");
+    if (explanationDiv && toggleText) {
+      const isHidden = explanationDiv.classList.contains("d-none");
+      explanationDiv.classList.toggle("d-none");
+      toggleText.textContent = isHidden ? "Ẩn giải thích" : "Hiển thị giải thích";
+    }
+  });
 
   document.querySelector("#results-table tbody")?.addEventListener("click", (event) => {
     const btn = event.target.closest("[data-analysis-id]");
@@ -323,6 +335,7 @@ async function runBatch() {
     }
 
     state.batchSummary = data.summary;
+    state.batchResults = data.results || []; // Lưu kết quả batch
     renderBatchSummary();
 
     data.results.forEach((result) => {
@@ -371,7 +384,7 @@ function renderResults() {
     tr.innerHTML = `
       <td>${dayjs(entry.timestamp).format("HH:mm:ss")}</td>
       <td class="payload-cell" title="${escapeHtml(entry.payload)}">${escapeHtml(
-        shorten(entry.payload, 80)
+        entry.payload
       )}${sourceBadge}</td>
       <td>PL ${entry.paranoia_level}</td>
       <td>${wafBadge}<div class="text-muted small">Score: ${entry.modsecurity.score.toFixed(
@@ -386,6 +399,11 @@ function renderResults() {
 
     tbody.appendChild(tr);
   });
+  
+  // Khởi tạo tooltip sau khi render
+  setTimeout(() => {
+    initRuleTooltips();
+  }, 50);
 }
 
 async function fetchLogs(page) {
@@ -466,7 +484,7 @@ function renderLogs() {
       tr.innerHTML = `
         <td>${dayjs(entry.timestamp).format("YYYY-MM-DD HH:mm:ss")}</td>
         <td class="payload-cell" title="${escapeHtml(entry.payload)}">${escapeHtml(
-          shorten(entry.payload, 70)
+          entry.payload
         )}</td>
         <td>PL ${entry.paranoia_level}</td>
         <td>${wafBadge}</td>
@@ -479,6 +497,11 @@ function renderLogs() {
       `;
       tbody.appendChild(tr);
     });
+
+  // Khởi tạo tooltip sau khi render
+  setTimeout(() => {
+    initRuleTooltips();
+  }, 50);
 
   const page = state.logs.page || 1;
   const pageSize = state.logs.page_size || state.logs.entries.length;
@@ -499,6 +522,58 @@ function renderLogs() {
   }
 }
 
+// Tạo tooltip text cho rule từ RULES_DATA
+function getRuleTooltip(ruleId) {
+  const rule = RULES_DATA[ruleId];
+  if (!rule) {
+    return `Rule ${ruleId}: Không có thông tin chi tiết`;
+  }
+  
+  const parts = [];
+  parts.push(`<strong>${rule.name}</strong>`);
+  parts.push(rule.description);
+  
+  if (rule.patterns && rule.patterns.length > 0) {
+    parts.push(`<br/><strong>Patterns:</strong> ${rule.patterns.slice(0, 3).join(", ")}${rule.patterns.length > 3 ? "..." : ""}`);
+  }
+  
+  if (rule.severity) {
+    parts.push(`<br/><strong>Severity:</strong> ${rule.severity}`);
+  }
+  
+  if (rule.score) {
+    parts.push(`<br/><strong>Điểm:</strong> ${rule.score}`);
+  }
+  
+  if (rule.pl && rule.pl.length > 0) {
+    parts.push(`<br/><strong>Paranoia Levels:</strong> PL ${rule.pl.join(", PL ")}`);
+  }
+  
+  return parts.join("<br/>");
+}
+
+// Khởi tạo tooltip cho tất cả rule badges
+function initRuleTooltips() {
+  const tooltips = document.querySelectorAll('.rule-badge[data-bs-toggle="tooltip"]');
+  tooltips.forEach(el => {
+    // Xóa tooltip cũ nếu có
+    const existingTooltip = bootstrap.Tooltip.getInstance(el);
+    if (existingTooltip) {
+      existingTooltip.dispose();
+    }
+    // Tạo tooltip mới
+    try {
+      new bootstrap.Tooltip(el, {
+        html: true,
+        placement: 'top',
+        trigger: 'hover'
+      });
+    } catch (e) {
+      // Bỏ qua lỗi nếu Bootstrap chưa sẵn sàng
+    }
+  });
+}
+
 function renderRules(rules, details, limit = 5) {
   const hasDetails = Array.isArray(details) && details.length;
   const source = hasDetails ? details : rules || [];
@@ -507,30 +582,51 @@ function renderRules(rules, details, limit = 5) {
     return '<span class="text-muted">Không kích hoạt</span>';
   }
 
-  const items = source.slice(0, limit).map((item) => {
+  const items = source.slice(0, limit).map((item, index) => {
     const id = hasDetails ? item.id : item;
     const message = hasDetails ? item.message || "" : "";
     const severity = hasDetails ? item.severity_label || "" : "";
-    const titleParts = [];
-    if (message) titleParts.push(message);
-    if (severity) titleParts.push(`Severity: ${severity}`);
-    const titleAttr = titleParts.length ? ` title="${escapeHtml(titleParts.join(" | "))}"` : "";
-    return `<span class="badge bg-info text-dark me-1"${titleAttr}>${escapeHtml(id)}</span>`;
+    
+    // Lấy tooltip từ RULES_DATA
+    const ruleTooltip = getRuleTooltip(id);
+    const tooltipId = `rule-tooltip-${id}-${index}-${Date.now()}`;
+    
+    // Tạo tooltip HTML với Bootstrap tooltip
+    return `<span 
+      class="badge bg-info text-dark me-1 rule-badge" 
+      data-bs-toggle="tooltip" 
+      data-bs-html="true"
+      data-bs-placement="top"
+      title="${escapeHtml(ruleTooltip).replace(/"/g, '&quot;')}"
+      id="${tooltipId}">${escapeHtml(id)}${severity ? ` (${severity})` : ''}</span>`;
   });
 
   if (source.length > limit) {
     items.push(`<span class="badge bg-secondary">+${source.length - limit}</span>`);
   }
 
-  return items.join("");
+  const html = items.join("");
+  
+  // Khởi tạo tooltip sau khi render
+  setTimeout(() => {
+    initRuleTooltips();
+  }, 50);
+
+  return html;
 }
 
 function renderBatchSummary() {
   const container = document.getElementById("batch-summary");
+  const explanationDiv = document.getElementById("batch-explanation");
+  const toggleBtn = document.getElementById("toggle-explanation-btn");
+  const analysisDiv = document.getElementById("batch-analysis");
+  
   if (!container) return;
 
   if (!state.batchSummary) {
     container.classList.add("d-none");
+    if (explanationDiv) explanationDiv.classList.add("d-none");
+    if (toggleBtn) toggleBtn.style.display = "none";
     container.textContent = "";
     return;
   }
@@ -548,10 +644,61 @@ function renderBatchSummary() {
   const timeText = timestamp ? dayjs(timestamp).format("YYYY-MM-DD HH:mm:ss") : "-";
   container.classList.remove("d-none");
   container.innerHTML = `
-    <strong>Batch ID:</strong> ${batch_id}<br/>
-    Nguồn: ${source || "N/A"} | Thời gian: ${timeText}<br/>
-    Tổng payload: ${total} | ModSecurity chặn: ${modsecurity_block} | ML đánh dấu attack: ${ml_detect} | Cùng chặn: ${concordant_block}
+    <div class="d-flex flex-wrap align-items-center gap-3 mb-2">
+      <div><strong>Batch ID:</strong> <code class="small">${batch_id}</code></div>
+      <div><strong>Nguồn:</strong> ${source || "N/A"}</div>
+      <div><strong>Thời gian:</strong> ${timeText}</div>
+    </div>
+    <div class="row g-2 mt-2">
+      <div class="col-md-3">
+        <div class="border rounded p-2 text-center">
+          <div class="fw-bold text-primary">${total}</div>
+          <div class="small text-muted">Tổng payload</div>
+        </div>
+      </div>
+      <div class="col-md-3">
+        <div class="border rounded p-2 text-center">
+          <div class="fw-bold text-danger">${modsecurity_block}</div>
+          <div class="small text-muted">ModSecurity chặn</div>
+        </div>
+      </div>
+      <div class="col-md-3">
+        <div class="border rounded p-2 text-center">
+          <div class="fw-bold text-warning">${ml_detect}</div>
+          <div class="small text-muted">ML đánh dấu attack</div>
+        </div>
+      </div>
+      <div class="col-md-3">
+        <div class="border rounded p-2 text-center">
+          <div class="fw-bold text-success">${concordant_block}</div>
+          <div class="small text-muted">Cùng chặn</div>
+        </div>
+      </div>
+    </div>
   `;
+
+  // Hiển thị nút toggle
+  if (toggleBtn) {
+    toggleBtn.style.display = "block";
+  }
+
+  // Phân tích kết quả batch thực tế
+  if (analysisDiv && state.batchResults.length > 0) {
+    const analysis = analyzeBatchResults(state.batchResults);
+    analysisDiv.innerHTML = renderDetailedAnalysis(analysis, modsecurity_block, ml_detect, concordant_block, total);
+  } else if (analysisDiv) {
+    // Fallback nếu chưa có kết quả
+    const onlyModSec = modsecurity_block - concordant_block;
+    const onlyML = ml_detect - concordant_block;
+    const bothAllow = total - modsecurity_block - onlyML;
+    const totalDetected = modsecurity_block + onlyML;
+
+    analysisDiv.innerHTML = `
+      <div class="alert alert-warning mb-0">
+        <small>Chưa có dữ liệu chi tiết. Vui lòng chạy batch để xem phân tích cụ thể.</small>
+      </div>
+    `;
+  }
 }
 
 function buildDecisionBadge(decision) {
@@ -903,12 +1050,827 @@ function renderTimeline(steps) {
   });
 }
 
+// Dữ liệu rules với mô tả chi tiết
+const RULES_DATA = {
+  "942100": {
+    name: "SQL Keywords Detection",
+    description: "Phát hiện các từ khóa SQL nguy hiểm như SELECT, UNION, INSERT, UPDATE, DELETE, DROP",
+    patterns: ["SELECT", "UNION", "INSERT", "UPDATE", "DELETE", "DROP"],
+    severity: "CRITICAL",
+    pl: [1, 2, 3, 4],
+    score: 5,
+    examples: ["UNION SELECT", "DROP TABLE", "INSERT INTO"]
+  },
+  "942110": {
+    name: "SQL Injection Attack: Common Injection Testing",
+    description: "Phát hiện các cố gắng bypass logic (luôn đúng) như OR 1=1, OR true",
+    patterns: ["OR 1=1", "OR true", "AND 1=1", "OR '1'='1'"],
+    severity: "ERROR",
+    pl: [1, 2, 3, 4],
+    score: 4,
+    examples: ["OR 1=1", "username=' OR '1'='1"]
+  },
+  "942120": {
+    name: "SQL Injection Attack: Database Schema Detection",
+    description: "Phát hiện truy cập vào schema database như information_schema, pg_catalog",
+    patterns: ["information_schema", "pg_catalog", "sys.schema"],
+    severity: "ERROR",
+    pl: [1, 2, 3, 4],
+    score: 4,
+    examples: ["FROM information_schema.tables", "pg_catalog.pg_user"]
+  },
+  "942130": {
+    name: "SQL Injection Attack: Time-based Attack Detection",
+    description: "Phát hiện tấn công time-based sử dụng delay như SLEEP, BENCHMARK, WAITFOR",
+    patterns: ["SLEEP(", "BENCHMARK(", "WAITFOR DELAY"],
+    severity: "ERROR",
+    pl: [1, 2, 3, 4],
+    score: 4,
+    examples: ["SLEEP(5)", "BENCHMARK(1000000,MD5(1))"]
+  },
+  "942131": {
+    name: "SQL Injection Attack: Time-based Attack Detection (Extended)",
+    description: "Phát hiện time-based attacks với các hàm khác như IF, CASE",
+    patterns: ["IF(", "CASE WHEN", "WAITFOR"],
+    severity: "WARNING",
+    pl: [2, 3, 4],
+    score: 3,
+    examples: ["IF(1=1, SLEEP(5), 0)", "CASE WHEN 1=1 THEN SLEEP(5)"]
+  },
+  "942140": {
+    name: "SQL Injection Attack: Boolean-based Blind SQL Injection",
+    description: "Phát hiện boolean-based blind SQL injection",
+    patterns: ["AND", "OR", "XOR"],
+    severity: "WARNING",
+    pl: [2, 3, 4],
+    score: 3,
+    examples: ["AND 1=1", "OR 1=2"]
+  },
+  "942150": {
+    name: "SQL Injection Attack: SQL Tautology Detected",
+    description: "Phát hiện tautology (luôn đúng) trong SQL",
+    patterns: ["'1'='1'", "'a'='a'", "1=1"],
+    severity: "WARNING",
+    pl: [2, 3, 4],
+    score: 3,
+    examples: ["'1'='1'", "OR 'a'='a'"]
+  },
+  "942151": {
+    name: "SQL Injection Attack: SQL Tautology Detected (Extended)",
+    description: "Phát hiện tautology mở rộng",
+    patterns: ["'1'='1", "1=1--", "true=true"],
+    severity: "WARNING",
+    pl: [3, 4],
+    score: 3,
+    examples: ["'1'='1--", "true=true"]
+  },
+  "942160": {
+    name: "Detects basic SQL authentication bypass attempts",
+    description: "Phát hiện cố gắng bypass authentication cơ bản",
+    patterns: ["admin'--", "admin'/*", "' OR '1'='1"],
+    severity: "CRITICAL",
+    pl: [1, 2, 3, 4],
+    score: 5,
+    examples: ["admin'--", "admin'/*"]
+  },
+  "942170": {
+    name: "Detects SQL benchmark and sleep injection attempts",
+    description: "Phát hiện benchmark và sleep injection",
+    patterns: ["BENCHMARK", "SLEEP", "PG_SLEEP"],
+    severity: "ERROR",
+    pl: [1, 2, 3, 4],
+    score: 4,
+    examples: ["BENCHMARK(1000000,MD5(1))", "PG_SLEEP(5)"]
+  },
+  "942180": {
+    name: "Detects basic SQL injection attempts",
+    description: "Phát hiện SQL injection cơ bản",
+    patterns: ["' OR", "' AND", "';"],
+    severity: "ERROR",
+    pl: [1, 2, 3, 4],
+    score: 4,
+    examples: ["' OR 1=1", "'; DROP TABLE"]
+  },
+  "942190": {
+    name: "Detects MSSQL code execution and information gathering attempts",
+    description: "Phát hiện code execution và information gathering trên MSSQL",
+    patterns: ["xp_cmdshell", "sp_executesql", "OPENROWSET"],
+    severity: "CRITICAL",
+    pl: [2, 3, 4],
+    score: 5,
+    examples: ["xp_cmdshell('dir')", "sp_executesql"]
+  },
+  "942200": {
+    name: "Detects MySQL comment-/space-obfuscated injections",
+    description: "Phát hiện SQL injection sử dụng comment và space để obfuscate",
+    patterns: ["--", "#", "/*", "*/"],
+    severity: "WARNING",
+    pl: [1, 2, 3, 4],
+    score: 3,
+    examples: ["-- comment", "/* comment */", "# comment"]
+  },
+  "942210": {
+    name: "Detects chained SQL injection attempts",
+    description: "Phát hiện chained SQL injection (nhiều câu lệnh)",
+    patterns: [";", "UNION ALL", "UNION SELECT"],
+    severity: "ERROR",
+    pl: [2, 3, 4],
+    score: 4,
+    examples: ["; DROP TABLE", "UNION ALL SELECT"]
+  },
+  "942230": {
+    name: "Detects conditional SQL injection attempts",
+    description: "Phát hiện conditional SQL injection",
+    patterns: ["IF(", "CASE", "IIF("],
+    severity: "WARNING",
+    pl: [2, 3, 4],
+    score: 3,
+    examples: ["IF(1=1, SLEEP(5), 0)", "CASE WHEN"]
+  },
+  "942240": {
+    name: "Detects MySQL stored procedure/function injection attempts",
+    description: "Phát hiện stored procedure/function injection trên MySQL",
+    patterns: ["PROCEDURE", "FUNCTION", "CALL"],
+    severity: "ERROR",
+    pl: [3, 4],
+    score: 4,
+    examples: ["CALL procedure()", "FUNCTION()"]
+  },
+  "942250": {
+    name: "Detects MySQL UDF injection and other data/structure manipulation attempts",
+    description: "Phát hiện UDF injection và data/structure manipulation",
+    patterns: ["UDF", "LOAD_FILE", "INTO OUTFILE"],
+    severity: "CRITICAL",
+    pl: [3, 4],
+    score: 5,
+    examples: ["LOAD_FILE('/etc/passwd')", "INTO OUTFILE"]
+  },
+  "942260": {
+    name: "Detects basic SQL authentication bypass attempts 2/3",
+    description: "Phát hiện authentication bypass (phiên bản 2)",
+    patterns: ["' OR", "'='", "LIKE '"],
+    severity: "ERROR",
+    pl: [1, 2, 3, 4],
+    score: 4,
+    examples: ["' OR '1'='1", "LIKE '%'"]
+  },
+  "942270": {
+    name: "Looking for basic sql injection. Common attack string for mysql, oracle and others",
+    description: "Tìm kiếm SQL injection cơ bản cho MySQL, Oracle",
+    patterns: ["' OR", "UNION", "SELECT"],
+    severity: "ERROR",
+    pl: [1, 2, 3, 4],
+    score: 4,
+    examples: ["' OR 1=1", "UNION SELECT"]
+  },
+  "942280": {
+    name: "Detects PostgreSQL pg_sleep injection, waitfor delay attacks and database shutdown attempts",
+    description: "Phát hiện pg_sleep injection, waitfor delay và database shutdown",
+    patterns: ["pg_sleep", "WAITFOR", "SHUTDOWN"],
+    severity: "CRITICAL",
+    pl: [2, 3, 4],
+    score: 5,
+    examples: ["pg_sleep(5)", "WAITFOR DELAY '00:00:05'"]
+  },
+  "942290": {
+    name: "Finds basic MongoDB SQL injection attempts",
+    description: "Phát hiện MongoDB SQL injection cơ bản",
+    patterns: ["$where", "$ne", "$gt"],
+    severity: "WARNING",
+    pl: [3, 4],
+    score: 3,
+    examples: ["$where", "$ne: null"]
+  },
+  "942300": {
+    name: "Detects MySQL comment-/space-obfuscated injections and union/select",
+    description: "Phát hiện obfuscated injection với comment/space và union/select",
+    patterns: ["/**/", "UNION/**/SELECT", "/*!50000"],
+    severity: "ERROR",
+    pl: [2, 3, 4],
+    score: 4,
+    examples: ["/**/UNION/**/SELECT", "/*!50000UNION*/"]
+  },
+  "942310": {
+    name: "Detects SQL injection with hex encoding",
+    description: "Phát hiện SQL injection sử dụng hex encoding",
+    patterns: ["0x", "UNHEX", "HEX("],
+    severity: "WARNING",
+    pl: [3, 4],
+    score: 3,
+    examples: ["0x61646d696e", "UNHEX('61646d696e')"]
+  },
+  "942320": {
+    name: "Detects SQL injection with base64 encoding",
+    description: "Phát hiện SQL injection sử dụng base64 encoding",
+    patterns: ["FROM_BASE64", "TO_BASE64", "base64"],
+    severity: "WARNING",
+    pl: [3, 4],
+    score: 3,
+    examples: ["FROM_BASE64", "TO_BASE64"]
+  },
+  "942330": {
+    name: "Detects classic SQL injection probings 1/2",
+    description: "Phát hiện classic SQL injection probing (phần 1)",
+    patterns: ["' OR", "' AND", "';"],
+    severity: "ERROR",
+    pl: [1, 2, 3, 4],
+    score: 4,
+    examples: ["' OR 1=1", "' AND 1=1"]
+  },
+  "942340": {
+    name: "Detects basic SQL authentication bypass attempts 3/3",
+    description: "Phát hiện authentication bypass (phiên bản 3)",
+    patterns: ["' OR", "'='", "LIKE"],
+    severity: "ERROR",
+    pl: [1, 2, 3, 4],
+    score: 4,
+    examples: ["' OR '1'='1", "LIKE '%'"]
+  },
+  "942350": {
+    name: "Detects MySQL UDF injection and other data/structure manipulation attempts",
+    description: "Phát hiện MySQL UDF injection và manipulation",
+    patterns: ["UDF", "LOAD_FILE", "INTO DUMPFILE"],
+    severity: "CRITICAL",
+    pl: [3, 4],
+    score: 5,
+    examples: ["LOAD_FILE('/etc/passwd')", "INTO DUMPFILE"]
+  },
+  "942360": {
+    name: "Detects concatenated basic SQL injection and SQLLite attempts",
+    description: "Phát hiện concatenated SQL injection và SQLLite attempts",
+    patterns: ["||", "CONCAT", "||'"],
+    severity: "WARNING",
+    pl: [2, 3, 4],
+    score: 3,
+    examples: ["'||'", "CONCAT('a','b')"]
+  },
+  "942370": {
+    name: "Detects classic SQL injection probings 2/2",
+    description: "Phát hiện classic SQL injection probing (phần 2)",
+    patterns: ["' OR", "UNION", "SELECT"],
+    severity: "ERROR",
+    pl: [1, 2, 3, 4],
+    score: 4,
+    examples: ["' OR 1=1", "UNION SELECT"]
+  },
+  "942380": {
+    name: "Detects SQL injection attempts with chained keywords",
+    description: "Phát hiện SQL injection với chained keywords",
+    patterns: ["UNION ALL", "UNION SELECT", "ORDER BY"],
+    severity: "ERROR",
+    pl: [2, 3, 4],
+    score: 4,
+    examples: ["UNION ALL SELECT", "ORDER BY 1"]
+  },
+  "942390": {
+    name: "Detects SQL injection attempts with stacked queries",
+    description: "Phát hiện stacked queries (nhiều câu lệnh)",
+    patterns: [";", "EXEC", "EXECUTE"],
+    severity: "CRITICAL",
+    pl: [2, 3, 4],
+    score: 5,
+    examples: ["; DROP TABLE", "EXEC xp_cmdshell"]
+  },
+  "942400": {
+    name: "Detects SQL injection with common backtick and function obfuscation",
+    description: "Phát hiện SQL injection với backtick và function obfuscation",
+    patterns: ["`", "FUNCTION", "PROCEDURE"],
+    severity: "WARNING",
+    pl: [3, 4],
+    score: 3,
+    examples: ["`table`", "FUNCTION()"]
+  },
+  "942410": {
+    name: "Detects SQL injection with common SQL keywords",
+    description: "Phát hiện SQL injection với SQL keywords phổ biến",
+    patterns: ["SELECT", "INSERT", "UPDATE", "DELETE"],
+    severity: "ERROR",
+    pl: [1, 2, 3, 4],
+    score: 4,
+    examples: ["SELECT * FROM", "INSERT INTO"]
+  },
+  "942430": {
+    name: "Restricted SQL Character Anomaly Detection (args): number of special characters exceeded",
+    description: "Phát hiện số lượng ký tự đặc biệt vượt quá ngưỡng",
+    patterns: ["'", '"', ";", "--"],
+    severity: "WARNING",
+    pl: [2, 3, 4],
+    score: 3,
+    examples: ["Nhiều ký tự đặc biệt"]
+  },
+  "942440": {
+    name: "SQL Comment Sequence Detected",
+    description: "Phát hiện SQL comment sequence",
+    patterns: ["--", "/*", "*/", "#"],
+    severity: "WARNING",
+    pl: [1, 2, 3, 4],
+    score: 3,
+    examples: ["-- comment", "/* comment */"]
+  },
+  "942450": {
+    name: "SQL Hex Encoding Identified",
+    description: "Phát hiện hex encoding trong SQL",
+    patterns: ["0x", "UNHEX", "HEX("],
+    severity: "WARNING",
+    pl: [3, 4],
+    score: 3,
+    examples: ["0x61646d696e", "UNHEX('61646d696e')"]
+  },
+  "942470": {
+    name: "SQL Injection Attack: Common Injection Testing Detected",
+    description: "Phát hiện common injection testing",
+    patterns: ["OR 1=1", "OR true", "AND 1=1"],
+    severity: "ERROR",
+    pl: [1, 2, 3, 4],
+    score: 4,
+    examples: ["OR 1=1", "AND 1=1"]
+  },
+  "942480": {
+    name: "SQL Injection Attack: SQL Tautology Detected",
+    description: "Phát hiện SQL tautology",
+    patterns: ["'1'='1'", "'a'='a'", "1=1"],
+    severity: "WARNING",
+    pl: [2, 3, 4],
+    score: 3,
+    examples: ["'1'='1'", "OR 'a'='a'"]
+  },
+  "942490": {
+    name: "SQL Injection Attack: SQL Tautology Detected (Extended)",
+    description: "Phát hiện SQL tautology mở rộng",
+    patterns: ["'1'='1", "true=true", "false=false"],
+    severity: "WARNING",
+    pl: [3, 4],
+    score: 3,
+    examples: ["'1'='1--", "true=true"]
+  },
+  "942500": {
+    name: "SQL Injection Attack: MySQL Comment Detection",
+    description: "Phát hiện MySQL comment",
+    patterns: ["--", "#", "/*", "*/"],
+    severity: "WARNING",
+    pl: [1, 2, 3, 4],
+    score: 3,
+    examples: ["-- comment", "# comment"]
+  },
+  "942510": {
+    name: "SQL Injection Attack: PostgreSQL Function Detection",
+    description: "Phát hiện PostgreSQL function",
+    patterns: ["pg_", "FUNCTION", "PROCEDURE"],
+    severity: "ERROR",
+    pl: [3, 4],
+    score: 4,
+    examples: ["pg_sleep", "pg_user"]
+  },
+  "942520": {
+    name: "SQL Injection Attack: MSSQL Function Detection",
+    description: "Phát hiện MSSQL function",
+    patterns: ["xp_", "sp_", "OPENROWSET"],
+    severity: "CRITICAL",
+    pl: [2, 3, 4],
+    score: 5,
+    examples: ["xp_cmdshell", "sp_executesql"]
+  },
+  "942530": {
+    name: "SQL Injection Attack: Oracle Function Detection",
+    description: "Phát hiện Oracle function",
+    patterns: ["UTL_", "SYS.", "DBMS_"],
+    severity: "ERROR",
+    pl: [3, 4],
+    score: 4,
+    examples: ["UTL_HTTP", "SYS.USER_TABLES"]
+  },
+  "942540": {
+    name: "SQL Injection Attack: SQLite Function Detection",
+    description: "Phát hiện SQLite function",
+    patterns: ["sqlite_", "load_extension"],
+    severity: "WARNING",
+    pl: [3, 4],
+    score: 3,
+    examples: ["sqlite_version", "load_extension"]
+  }
+};
+
+function renderRulesList() {
+  const container = document.getElementById("rules-list");
+  const emptyMsg = document.getElementById("rules-empty");
+  const searchInput = document.getElementById("rule-search");
+  const plFilter = document.getElementById("rule-pl-filter");
+
+  if (!container || !searchInput || !plFilter) return;
+
+  const searchTerm = (searchInput.value || "").toLowerCase();
+  const selectedPl = plFilter.value ? Number(plFilter.value) : null;
+
+  const filteredRules = Object.entries(RULES_DATA).filter(([ruleId, rule]) => {
+    // Search filter
+    const matchesSearch =
+      ruleId.toLowerCase().includes(searchTerm) ||
+      rule.name.toLowerCase().includes(searchTerm) ||
+      rule.description.toLowerCase().includes(searchTerm) ||
+      (rule.patterns || []).some((p) => p.toLowerCase().includes(searchTerm));
+
+    // PL filter
+    const matchesPl = selectedPl === null || rule.pl.includes(selectedPl);
+
+    return matchesSearch && matchesPl;
+  });
+
+  container.innerHTML = "";
+  emptyMsg.classList.toggle("d-none", filteredRules.length > 0);
+
+  if (filteredRules.length === 0) {
+    return;
+  }
+
+  filteredRules.forEach(([ruleId, rule]) => {
+    const col = document.createElement("div");
+    col.className = "col-md-6 col-lg-4";
+
+    const severityBadgeClass = {
+      CRITICAL: "bg-danger",
+      ERROR: "bg-warning text-dark",
+      WARNING: "bg-info text-dark",
+      NOTICE: "bg-secondary"
+    }[rule.severity] || "bg-secondary";
+
+    const plBadges = rule.pl.map((pl) => `<span class="badge bg-primary me-1">PL ${pl}</span>`).join("");
+
+    const examplesHtml = rule.examples
+      ? `<div class="mt-2"><strong>Ví dụ:</strong><ul class="small mb-0 ps-3"><li>${rule.examples
+          .map((ex) => `<code>${escapeHtml(ex)}</code>`)
+          .join("</li><li>")}</li></ul></div>`
+      : "";
+
+    const patternsHtml = rule.patterns
+      ? `<div class="mt-2"><strong>Patterns:</strong> ${rule.patterns
+          .map((p) => `<code class="small">${escapeHtml(p)}</code>`)
+          .join(", ")}</div>`
+      : "";
+
+    col.innerHTML = `
+      <div class="card h-100">
+        <div class="card-header d-flex justify-content-between align-items-center">
+          <h6 class="mb-0"><code>${ruleId}</code></h6>
+          <span class="badge ${severityBadgeClass}">${rule.severity}</span>
+        </div>
+        <div class="card-body">
+          <h6 class="card-title">${escapeHtml(rule.name)}</h6>
+          <p class="card-text small">${escapeHtml(rule.description)}</p>
+          <div class="mb-2">
+            <strong>Paranoia Levels:</strong> ${plBadges}
+          </div>
+          <div class="mb-2">
+            <strong>Điểm:</strong> <span class="badge bg-secondary">${rule.score}</span>
+          </div>
+          ${patternsHtml}
+          ${examplesHtml}
+        </div>
+      </div>
+    `;
+
+    container.appendChild(col);
+  });
+}
+
+function bindRulesEvents() {
+  const searchInput = document.getElementById("rule-search");
+  const plFilter = document.getElementById("rule-pl-filter");
+
+  if (searchInput) {
+    searchInput.addEventListener("input", renderRulesList);
+  }
+
+  if (plFilter) {
+    plFilter.addEventListener("change", renderRulesList);
+  }
+}
+
+// Phân tích kết quả batch và nhóm payload theo từng model
+function analyzeBatchResults(results) {
+  const analysis = {
+    byModel: {}, // Phân tích theo từng model
+    allModels: [] // Danh sách tất cả models
+  };
+
+  results.forEach((result) => {
+    const modSecBlock = result.modsecurity?.decision === "block";
+    const modSecScore = result.modsecurity?.score || 0;
+    const modSecRules = result.modsecurity?.triggered_rules || [];
+    
+    // Lấy tất cả kết quả ML (có thể có nhiều model)
+    const mlResults = result.ml_results?.length ? result.ml_results : (result.ml ? [result.ml] : []);
+    
+    // Phân tích theo từng model
+    mlResults.forEach((ml) => {
+      const modelKey = ml.model_key || "unknown";
+      const mlAttack = ml.prediction === 1;
+      
+      if (!analysis.byModel[modelKey]) {
+        analysis.byModel[modelKey] = {
+          modelName: ml.model_name || modelKey,
+          modelKey: modelKey,
+          bothBlock: [],
+          onlyModSec: [],
+          onlyML: [],
+          bothAllow: [],
+          stats: {
+            total: 0,
+            bothBlock: 0,
+            onlyModSec: 0,
+            onlyML: 0,
+            bothAllow: 0
+          }
+        };
+        analysis.allModels.push(modelKey);
+      }
+      
+      const modelAnalysis = analysis.byModel[modelKey];
+      modelAnalysis.stats.total++;
+      
+      const payloadData = {
+        payload: result.payload,
+        payloadPreview: result.payload_preview || result.payload.substring(0, 60),
+        modSecScore: modSecScore,
+        modSecRules: modSecRules,
+        mlModel: ml.model_name || modelKey,
+        mlConfidence: ml.probability_attack !== undefined 
+          ? ml.probability_attack 
+          : ml.decision_score !== undefined 
+          ? ml.decision_score 
+          : null,
+        mlPrediction: ml.prediction,
+        metadata: result.metadata
+      };
+      
+      if (modSecBlock && mlAttack) {
+        modelAnalysis.bothBlock.push(payloadData);
+        modelAnalysis.stats.bothBlock++;
+      } else if (modSecBlock && !mlAttack) {
+        modelAnalysis.onlyModSec.push(payloadData);
+        modelAnalysis.stats.onlyModSec++;
+      } else if (!modSecBlock && mlAttack) {
+        modelAnalysis.onlyML.push(payloadData);
+        modelAnalysis.stats.onlyML++;
+      } else {
+        modelAnalysis.bothAllow.push(payloadData);
+        modelAnalysis.stats.bothAllow++;
+      }
+    });
+  });
+
+  return analysis;
+}
+
+// Hiển thị phân tích chi tiết với danh sách payload theo từng model
+function renderDetailedAnalysis(analysis, modSecBlock, mlDetect, concordantBlock, total) {
+  const modelKeys = analysis.allModels || Object.keys(analysis.byModel);
+  
+  if (modelKeys.length === 0) {
+    return `<div class="alert alert-warning mb-0">Không có dữ liệu mô hình để phân tích.</div>`;
+  }
+  
+  let html = '';
+  
+  // Tính toán thống kê tổng hợp
+  let totalBothBlock = 0;
+  let totalOnlyModSec = 0;
+  let totalOnlyML = 0;
+  let totalBothAllow = 0;
+  let totalMLDetect = 0;
+  
+  modelKeys.forEach(key => {
+    const modelData = analysis.byModel[key];
+    totalBothBlock += modelData.stats.bothBlock;
+    totalOnlyModSec += modelData.stats.onlyModSec;
+    totalOnlyML += modelData.stats.onlyML;
+    totalBothAllow += modelData.stats.bothAllow;
+    totalMLDetect += modelData.stats.bothBlock + modelData.stats.onlyML;
+  });
+  
+  // Hiển thị phân tích theo từng model
+  html += `
+    <div class="mb-3">
+      <h6 class="mb-2">📊 Phân tích theo từng mô hình (${modelKeys.length} mô hình):</h6>
+      <div class="accordion" id="modelAnalysisAccordion">
+  `;
+  
+  modelKeys.forEach((modelKey, index) => {
+    const modelData = analysis.byModel[modelKey];
+    const accordionId = `model-${index}`;
+    const stats = modelData.stats;
+    
+    html += `
+      <div class="accordion-item">
+        <h2 class="accordion-header" id="heading-${accordionId}">
+          <button class="accordion-button ${index === 0 ? '' : 'collapsed'}" type="button" data-bs-toggle="collapse" data-bs-target="#collapse-${accordionId}">
+            <strong>${escapeHtml(modelData.modelName)}</strong>
+            <span class="badge bg-success ms-2">Cùng chặn: ${stats.bothBlock}</span>
+            <span class="badge bg-danger ms-1">Chỉ ModSec: ${stats.onlyModSec}</span>
+            <span class="badge bg-warning ms-1">Chỉ ML: ${stats.onlyML}</span>
+            <span class="badge bg-info ms-1">Cả hai cho phép: ${stats.bothAllow}</span>
+          </button>
+        </h2>
+        <div id="collapse-${accordionId}" class="accordion-collapse collapse ${index === 0 ? 'show' : ''}" data-bs-parent="#modelAnalysisAccordion">
+          <div class="accordion-body">
+            <div class="row g-3">
+              <div class="col-12">
+                <div class="border-start border-3 border-success ps-3 py-2 mb-2 bg-light rounded">
+                  <h6 class="text-success mb-1">✅ Cùng chặn với ModSecurity: ${stats.bothBlock} payload</h6>
+                  <small class="text-muted">ModSecurity: block + ${modelData.modelName}: attack → Đồng thuận cao</small>
+                </div>
+                ${renderPayloadList(modelData.bothBlock, "success", false, false)}
+              </div>
+              
+              <div class="col-12">
+                <div class="border-start border-3 border-danger ps-3 py-2 mb-2 bg-light rounded">
+                  <h6 class="text-danger mb-1">⚠️ Chỉ ModSecurity chặn: ${stats.onlyModSec} payload</h6>
+                  <small class="text-muted">ModSecurity: block + ${modelData.modelName}: legit → Có thể là false positive</small>
+                </div>
+                ${renderPayloadList(modelData.onlyModSec, "danger", false, false)}
+              </div>
+              
+              <div class="col-12">
+                <div class="border-start border-3 border-warning ps-3 py-2 mb-2 bg-light rounded">
+                  <h6 class="text-warning mb-1">🔍 Chỉ ${modelData.modelName} đánh dấu: ${stats.onlyML} payload</h6>
+                  <small class="text-muted">ModSecurity: allow + ${modelData.modelName}: attack → ${modelData.modelName} phát hiện thêm</small>
+                </div>
+                ${renderPayloadList(modelData.onlyML, "warning", false, false)}
+              </div>
+              
+              <div class="col-12">
+                <div class="border-start border-3 border-info ps-3 py-2 mb-2 bg-light rounded">
+                  <h6 class="text-info mb-1">✓ Cả hai đều cho phép: ${stats.bothAllow} payload</h6>
+                  <small class="text-muted">ModSecurity: allow + ${modelData.modelName}: legit → Có thể là payload hợp lệ</small>
+                </div>
+                ${renderPayloadList(modelData.bothAllow, "info", true, false)}
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    `;
+  });
+  
+  html += `</div></div>`;
+  
+  // So sánh giữa các model
+  if (modelKeys.length > 1) {
+    html += `
+      <div class="mt-4">
+        <h6 class="mb-3">📈 So sánh giữa các mô hình:</h6>
+        <div class="table-responsive">
+          <table class="table table-sm table-bordered">
+            <thead class="table-light">
+              <tr>
+                <th>Mô hình</th>
+                <th class="text-center">Cùng chặn</th>
+                <th class="text-center">Chỉ ModSec</th>
+                <th class="text-center">Chỉ ML</th>
+                <th class="text-center">Cả hai cho phép</th>
+                <th class="text-center">Tổng ML phát hiện</th>
+                <th class="text-center">Tỉ lệ đồng thuận</th>
+              </tr>
+            </thead>
+            <tbody>
+    `;
+    
+    modelKeys.forEach(key => {
+      const modelData = analysis.byModel[key];
+      const stats = modelData.stats;
+      const totalMLDetect = stats.bothBlock + stats.onlyML;
+      const agreementRate = stats.total > 0 ? ((stats.bothBlock / stats.total) * 100).toFixed(1) : '0.0';
+      
+      html += `
+        <tr>
+          <td><strong>${escapeHtml(modelData.modelName)}</strong></td>
+          <td class="text-center"><span class="badge bg-success">${stats.bothBlock}</span></td>
+          <td class="text-center"><span class="badge bg-danger">${stats.onlyModSec}</span></td>
+          <td class="text-center"><span class="badge bg-warning">${stats.onlyML}</span></td>
+          <td class="text-center"><span class="badge bg-info">${stats.bothAllow}</span></td>
+          <td class="text-center"><strong>${totalMLDetect}</strong></td>
+          <td class="text-center"><strong>${agreementRate}%</strong></td>
+        </tr>
+      `;
+    });
+    
+    html += `
+            </tbody>
+          </table>
+        </div>
+      </div>
+    `;
+  }
+  
+  // Tổng hợp
+  html += `
+    <div class="mt-3 p-3 bg-light rounded">
+      <h6>📊 Tổng hợp:</h6>
+      <ul class="mb-0 small">
+        <li>ModSecurity chặn: <strong>${modSecBlock}</strong> payload</li>
+        <li>Tổng ML phát hiện (tất cả models): <strong>${totalMLDetect}</strong> payload</li>
+        <li>Tổng cùng chặn (tất cả models): <strong>${totalBothBlock}</strong> payload</li>
+        <li>Số mô hình đã phân tích: <strong>${modelKeys.length}</strong></li>
+      </ul>
+    </div>
+  `;
+  
+  return html;
+}
+
+// Hiển thị danh sách payload
+function renderPayloadList(payloads, colorClass, showAll = false, compact = false) {
+  if (payloads.length === 0) {
+    return `<div class="text-muted small ps-3">Không có payload nào trong nhóm này.</div>`;
+  }
+  
+  const maxShow = compact ? 5 : 10;
+  const toShow = showAll ? payloads : payloads.slice(0, maxShow);
+  const remaining = payloads.length - toShow.length;
+  
+  let html = `<div class="list-group list-group-flush">`;
+  
+  toShow.forEach((item, idx) => {
+    const payloadText = escapeHtml(item.payloadPreview || item.payload.substring(0, 80));
+    const modSecBadge = item.modSecScore >= 5.0 
+      ? `<span class="badge bg-danger">Block (${item.modSecScore.toFixed(2)})</span>`
+      : `<span class="badge bg-success">Allow (${item.modSecScore.toFixed(2)})</span>`;
+    
+    const rulesBadges = (item.modSecRules || []).slice(0, 3).map((r, idx) => {
+      const ruleTooltip = getRuleTooltip(r);
+      const tooltipId = `rule-tooltip-payload-${r}-${idx}-${Date.now()}`;
+      return `<span 
+        class="badge bg-info text-dark rule-badge" 
+        data-bs-toggle="tooltip" 
+        data-bs-html="true"
+        data-bs-placement="top"
+        title="${escapeHtml(ruleTooltip).replace(/"/g, '&quot;')}"
+        id="${tooltipId}">${escapeHtml(r)}</span>`;
+    }).join(" ");
+    const moreRules = (item.modSecRules || []).length > 3 
+      ? `<span class="badge bg-secondary">+${item.modSecRules.length - 3}</span>` 
+      : "";
+    
+    // Hiển thị thông tin ML cho model cụ thể
+    let mlInfo = "";
+    if (item.mlModel) {
+      const mlBadge = item.mlPrediction === 1
+        ? `<span class="badge bg-danger">Attack</span>`
+        : `<span class="badge bg-success">Legit</span>`;
+      
+      let confidenceText = "";
+      if (item.mlConfidence !== null && item.mlConfidence !== undefined) {
+        if (item.mlConfidence <= 1 && item.mlConfidence >= 0) {
+          // Probability (0-1)
+          confidenceText = `${(item.mlConfidence * 100).toFixed(1)}%`;
+        } else {
+          // Decision score
+          confidenceText = `Score: ${item.mlConfidence.toFixed(3)}`;
+        }
+      }
+      
+      mlInfo = `<div class="small text-muted mt-1"><strong>${item.mlModel}:</strong> ${mlBadge} ${confidenceText ? `(${confidenceText})` : ''}</div>`;
+    }
+    
+    const name = item.metadata?.name ? `<strong>${escapeHtml(item.metadata.name)}:</strong> ` : "";
+    
+    html += `
+      <div class="list-group-item">
+        <div class="d-flex justify-content-between align-items-start">
+          <div class="flex-grow-1">
+            <div>${name}<code class="small">${payloadText}${item.payload && item.payload.length > 80 ? '...' : ''}</code></div>
+            <div class="mt-1">
+              <strong>ModSecurity:</strong> ${modSecBadge}
+              ${rulesBadges ? `<br/><strong>Rules:</strong> ${rulesBadges} ${moreRules}` : '<br/><span class="text-muted small">Không có rules</span>'}
+            </div>
+            ${mlInfo}
+          </div>
+        </div>
+      </div>
+    `;
+  });
+  
+  html += `</div>`;
+  
+  if (remaining > 0 && !showAll) {
+    html += `<div class="text-muted small ps-3 mt-2">... và ${remaining} payload khác</div>`;
+  }
+  
+  // Khởi tạo tooltip cho rules badges sau khi render
+  setTimeout(() => {
+    initRuleTooltips();
+  }, 100);
+  
+  return html;
+}
+
 document.addEventListener("DOMContentLoaded", async () => {
   state.detailModal = new bootstrap.Modal(document.getElementById("detailModal"));
   await fetchConfig();
   await fetchLogs(1);
   await fetchStats();
   bindEvents();
+  bindRulesEvents();
   renderBatchSummary();
+  renderRulesList();
 });
 

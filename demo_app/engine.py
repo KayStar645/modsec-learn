@@ -455,7 +455,7 @@ class DetectionEngine:
             },
             {
                 "title": f"Đánh giá bằng ModSecurity ({self._modsec_backend})",
-                "detail": f"Score = {waf_score:.2f} so với threshold {threshold:.2f}. Luật: {rules_text}",
+                "detail": f"Score = {waf_score:.2f} so với threshold {threshold:.2f}. Rule: {rules_text}",
                 "status": "block" if waf_decision == "block" else "allow",
             },
         ]
