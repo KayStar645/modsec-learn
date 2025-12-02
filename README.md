@@ -25,7 +25,7 @@ luyện và đánh giá mô hình.
 
 ```bash
 python -m venv .venv
-source .venv/bin/activate        # Windows: .venv\Scripts\activate
+source .venv_wsl/bin/activate        # Windows: .venv\Scripts\activate
 python.exe -m pip install --upgrade pip
 pip install --upgrade pip
 pip install -r requirements.txt
@@ -45,7 +45,7 @@ pip install -r requirements.txt
    git clone https://github.com/AvalZ/pymodsecurity.git
    cd pymodsecurity
    python setup.py build
-   python setup.py install
+   c
    ```
 
 3. Sao chép OWASP Core Rule Set (CRS) 4.0.0 vào thư mục dự án:
@@ -64,10 +64,12 @@ pip install -r requirements.txt
   mảnh JSON nhỏ thành tệp hoàn chỉnh:
   ```bash
   cd modsec-learn-dataset/legitimate
-  python merge.py     # tạo legitimate_dataset.json
+  python merge.py     # Windows: tạo legitimate_dataset.json
+  python3 merge.py    # Linux/WSL: tạo legitimate_dataset.json
 
   cd ../malicious
-  python merge.py     # tạo sqli_dataset.json
+  python merge.py     # Windows: tạo sqli_dataset.json
+  python3 merge.py    # Linux/WSL: tạo sqli_dataset.json
   ```
 
 ### 4.2. Cấu hình đường dẫn trong `config.toml`
@@ -95,7 +97,8 @@ Script `scripts/build_dataset.py` sẽ:
 
 Chạy:
 ```bash
-python scripts/build_dataset.py
+python scripts/build_dataset.py    # Windows
+python3 scripts/build_dataset.py   # Linux/WSL
 ```
 
 ## 6. Trích xuất mã luật CRS (tùy chọn)
@@ -104,7 +107,8 @@ Nếu bạn muốn tạo lại danh sách mã luật (IDs) ModSecurity đã kíc
 hãy chạy:
 
 ```bash
-python scripts/extract_modsec_crs_ids.py
+python scripts/extract_modsec_crs_ids.py    # Windows
+python3 scripts/extract_modsec_crs_ids.py   # Linux/WSL
 ```
 
 Script sẽ:
@@ -123,7 +127,8 @@ Script `scripts/run_training.py` sẽ:
 
 Chạy lệnh:
 ```bash
-python scripts/run_training.py
+python scripts/run_training.py    # Windows
+python3 scripts/run_training.py   # Linux/WSL (nếu `python` không có sẵn)
 ```
 
 > Mẹo: đảm bảo ModSecurity đã được cài đặt và các file cấu hình trong
@@ -142,7 +147,8 @@ Script `scripts/run_experiments.py` sẽ:
 
 Chạy:
 ```bash
-python scripts/run_experiments.py
+python scripts/run_experiments.py    # Windows
+python3 scripts/run_experiments.py   # Linux/WSL
 ```
 
 ### 8.2. So sánh trọng số luật
@@ -150,7 +156,8 @@ python scripts/run_experiments.py
 Nếu bạn quan tâm sự khác biệt trọng số giữa mô hình tuyến tính và ModSecurity,
 hãy dùng:
 ```bash
-python scripts/analyze_rules.py
+python scripts/analyze_rules.py    # Windows
+python3 scripts/analyze_rules.py   # Linux/WSL
 ```
 
 Kết quả sẽ là các biểu đồ `.pdf` trong `data/figures/`, mỗi biểu đồ so sánh
@@ -203,7 +210,8 @@ SQLi và quan sát phản ứng của ModSecurity CRS lẫn mô hình học máy
 ### 12.2. Khởi chạy
 
 ```bash
-python -m demo_app.app
+python -m demo_app.app    # Windows
+python3 -m demo_app.app   # Linux/WSL
 ```
 
 Ứng dụng mặc định chạy tại `http://127.0.0.1:5000`. Màn hình chính cung cấp:
